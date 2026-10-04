@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  {% if preview %}
+  <div class="preview-banner" role="status">Preview, not live. Awaiting review.</div>
+  {% endif %}
   <header class="masthead">
     <h1>Latest AI News</h1>
     <p class="updated">Updated {{ updated }} Arizona time</p>
