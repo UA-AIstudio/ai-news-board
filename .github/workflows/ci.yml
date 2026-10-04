@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          # Full history so the Routine check can diff against the base branch.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Validate news data
+        run: python scripts/validate.py
+
+      - name: Build page
+        run: python scripts/build.py
+
+      - name: Confirm page exists
+        run: test -s site/index.html
+
+      - name: Check Routine pull request only changes data/news.json
+        if: startsWith(github.head_ref, 'claude/')
+        run: python scripts/validate.py --routine-pr "origin/${{ github.base_ref }}"
