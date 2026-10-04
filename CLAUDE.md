@@ -5,6 +5,11 @@ Arizona Libraries. A daily Routine writes `data/news.json` and opens a pull
 request; CI validates it; a person merges; merging builds and deploys to GitHub
 Pages.
 
+- Live (from `main`): https://ua-aistudio.github.io/ai-news-board/
+- Dev preview (from `claude/dev`): https://ua-aistudio.github.io/ai-news-board/dev/
+
+Review flow: check the dev link, then merge the `claude/dev` pull request.
+
 ## Hard rules
 
 - No em dashes (U+2014) anywhere: code, comments, docs, data, commit messages,
@@ -19,7 +24,10 @@ Pages.
 
 ## Workflow rules
 
-- The Routine only edits `data/news.json`.
+- The Routine only edits `data/news.json`, on the `claude/dev` branch, with at
+  most one open pull request from `claude/dev` into `main`.
+- The deploy builds both pages with `main`'s scripts and template; only data
+  comes from `claude/dev`. Preview builds use `build.py --preview`.
 - Design changes go through a branch and pull request. Never push to `main`.
 - Never weaken `scripts/validate.py` without a reviewed pull request.
 - The allowlist lives in `scripts/validate.py` (`ALLOWED_DOMAINS`) and in the
