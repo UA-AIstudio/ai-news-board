@@ -12,7 +12,8 @@
       "fri": ["11:00", "17:00"],
       "sat": null,
       "sun": null
-    }
+    },
+    "closures": []
   },
   {
     "headline": "Ask Us at the AI desk",

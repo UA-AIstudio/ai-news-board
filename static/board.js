@@ -7,30 +7,30 @@
 
   var TZ = "America/Phoenix";
   var HOUR = 60 * 60 * 1000;
+  var DAY = 24 * HOUR;
   var NEW_WINDOW = 48 * HOUR;
   var DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   var DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"];
 
   // ---- Pure helpers (also exported for tests) -----------------------------
 
   var partsFormat = new Intl.DateTimeFormat("en-US", {
-    timeZone: TZ, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    timeZone: TZ, weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23"
   });
 
-  /** Day of week (0 = Sunday) and minutes since midnight, in Arizona time. */
+  /** Arizona date (YYYY-MM-DD), day of week (0 = Sunday) and minutes since midnight. */
   function arizonaParts(ms) {
     var parts = partsFormat.formatToParts(new Date(ms));
-    var out = { day: 0, minutes: 0 };
-    var hour = 0;
-    var minute = 0;
-    for (var i = 0; i < parts.length; i++) {
-      var p = parts[i];
-      if (p.type === "weekday") out.day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.value);
-      if (p.type === "hour") hour = parseInt(p.value, 10) % 24;
-      if (p.type === "minute") minute = parseInt(p.value, 10);
-    }
-    out.minutes = hour * 60 + minute;
-    return out;
+    var v = {};
+    for (var i = 0; i < parts.length; i++) v[parts[i].type] = parts[i].value;
+    return {
+      date: v.year + "-" + v.month + "-" + v.day,
+      day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(v.weekday),
+      minutes: (parseInt(v.hour, 10) % 24) * 60 + parseInt(v.minute, 10)
+    };
   }
 
   function toMinutes(hhmm) {
@@ -47,10 +47,19 @@
     return h12 + (m ? ":" + (m < 10 ? "0" : "") + m : "") + suffix;
   }
 
-  /** Studio status for a weekly hours object at time ms, or null if no hours. */
-  function studioStatus(hours, ms) {
+  /**
+   * Studio status at time ms, or null if there are no hours.
+   * hours: {mon: ["11:00", "18:00"], ..., sun: null}
+   * closures: [{date: "YYYY-MM-DD", note: "..."}], dates closed despite the hours.
+   */
+  function studioStatus(hours, ms, closures) {
     if (!hours) return null;
+    var closed = {};
+    (closures || []).forEach(function (c) { closed[c.date] = c.note; });
     var now = arizonaParts(ms);
+    if (Object.prototype.hasOwnProperty.call(closed, now.date)) {
+      return { open: false, text: "Closed today, " + closed[now.date] };
+    }
     var today = hours[DAY_KEYS[now.day]];
     if (today) {
       var open = toMinutes(today[0]);
@@ -59,13 +68,15 @@
         return { open: true, text: "Open now, until " + formatHour(close) };
       }
     }
-    for (var offset = 0; offset < 8; offset++) {
-      var day = (now.day + offset) % 7;
-      var h = hours[DAY_KEYS[day]];
-      if (!h) continue;
+    // Next opening, skipping closure dates. Look ahead far enough for a long break.
+    for (var offset = 0; offset < 60; offset++) {
+      var then = arizonaParts(ms + offset * DAY);
+      var h = hours[DAY_KEYS[then.day]];
+      if (!h || Object.prototype.hasOwnProperty.call(closed, then.date)) continue;
       var opens = toMinutes(h[0]);
       if (offset === 0 && now.minutes >= opens) continue;
-      var when = offset === 0 ? "today" : DAY_NAMES[day];
+      var when = offset === 0 ? "today" : offset < 7 ? DAY_NAMES[then.day]
+        : MONTH_NAMES[parseInt(then.date.slice(5, 7), 10) - 1] + " " + parseInt(then.date.slice(8), 10);
       return { open: false, text: "Closed, opens " + when + " " + formatHour(opens) };
     }
     return { open: false, text: "Closed" };
@@ -113,11 +124,11 @@
   // Studio status badge.
   var statusEl = $("#studio-status");
   var hoursEl = $("#studio-hours");
-  var hours = null;
-  try { hours = hoursEl ? JSON.parse(hoursEl.textContent) : null; } catch (e) { hours = null; }
+  var studio = null;
+  try { studio = hoursEl ? JSON.parse(hoursEl.textContent) : null; } catch (e) { studio = null; }
   function updateStatus() {
     if (!statusEl) return;
-    var status = studioStatus(hours, Date.now());
+    var status = studio ? studioStatus(studio.hours, Date.now(), studio.closures) : null;
     if (!status) { statusEl.hidden = true; return; }
     statusEl.hidden = false;
     statusEl.classList.toggle("is-open", status.open);

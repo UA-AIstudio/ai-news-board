@@ -170,6 +170,29 @@ def check_lengths(items, label: str) -> list[str]:
     return errors
 
 
+def check_closures(pinned_items) -> list[str]:
+    """Closure dates must be real calendar dates and not repeat."""
+    errors = []
+    for loc, item in pinned_items:
+        closures = item.get("closures")
+        if not isinstance(closures, list):
+            continue
+        seen = set()
+        for i, closure in enumerate(closures):
+            raw = closure.get("date") if isinstance(closure, dict) else None
+            if not isinstance(raw, str):
+                continue
+            try:
+                date.fromisoformat(raw)
+            except ValueError:
+                errors.append(f"pinned.json {loc}.closures[{i}].date: {raw!r} is not a real date (YYYY-MM-DD)")
+                continue
+            if raw in seen:
+                errors.append(f"pinned.json {loc}.closures[{i}].date: {raw} is listed more than once")
+            seen.add(raw)
+    return errors
+
+
 def check_em_dashes(value: object, label: str, loc: str = "") -> list[str]:
     errors = []
     if isinstance(value, str):
@@ -254,6 +277,7 @@ def run_checks(
         pinned_items = [(f"[{i}]", p) for i, p in enumerate(pinned) if isinstance(p, dict)]
         errors += check_urls(pinned_items, "pinned.json")
         errors += check_lengths(pinned_items, "pinned.json")
+        errors += check_closures(pinned_items)
 
     errors += check_em_dashes(news, "news.json")
     errors += check_em_dashes(pinned, "pinned.json")

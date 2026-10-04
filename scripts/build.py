@@ -398,9 +398,10 @@ def spotlight_items(news: dict) -> list[dict]:
 
 
 def studio_hours(pinned: list) -> dict | None:
+    """Regular hours and closure dates for the pinned item that has hours."""
     for item in pinned:
         if item.get("hours"):
-            return item["hours"]
+            return {"hours": item["hours"], "closures": item.get("closures", [])}
     return None
 
 
