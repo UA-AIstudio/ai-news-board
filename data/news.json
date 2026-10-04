@@ -1,0 +1,66 @@
+{
+  "updated": "2026-10-04T03:55:00-07:00",
+  "columns": {
+    "models": [
+      {
+        "headline": "Gemini 4 Argon announced for complex reasoning work",
+        "summary": "Google introduced Gemini 4 Argon for software engineering, knowledge work and cyber defense, rolling out first to trusted testers.",
+        "source": "Google",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-argon/",
+        "date": "2026-09-30"
+      },
+      {
+        "headline": "Anthropic releases Claude Sonnet 5.5",
+        "summary": "Anthropic says Sonnet 5.5 runs about 30 percent faster and costs up to 30 percent less than Sonnet 5 for most work.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/claude-sonnet-5-5",
+        "date": "2026-09-28"
+      },
+      {
+        "headline": "Google adds Gemini 3.8 Flash TTS and Flash-Lite TTS",
+        "summary": "New text-to-speech models generate customizable, expressive voices and are rolling out in Google AI Studio and the Gemini API.",
+        "source": "Google",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-8-text-to-speech/",
+        "date": "2026-09-23"
+      },
+      {
+        "headline": "Anthropic releases Claude Opus 5.5",
+        "summary": "Anthropic says Opus 5.5 performs near Claude Fable 5.1 while costing 40 percent less, and it is available on major cloud platforms.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "date": "2026-09-22"
+      }
+    ],
+    "tools": [
+      {
+        "headline": "Claude used to identify a new CRISPR-like enzyme system",
+        "summary": "Anthropic's life sciences group reports that Claude helped find array-associated reverse transcriptases in bacteriophages.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/claude-discovers-novel-enzyme-system",
+        "date": "2026-09-23"
+      },
+      {
+        "headline": "Transformers library can now run llama.cpp GGUF quants",
+        "summary": "Hugging Face Transformers now loads quantized GGUF models and runs them efficiently on local machines, including Apple Silicon.",
+        "source": "Hugging Face",
+        "url": "https://huggingface.co/blog/transformers-llama-cpp-quants",
+        "date": "2026-09-22"
+      },
+      {
+        "headline": "UK AISI adopts EvalEval format to share benchmark results",
+        "summary": "The UK AI Security Institute will publish evaluation results in a shared standard format to make benchmarks easier to reproduce.",
+        "source": "Hugging Face",
+        "url": "https://huggingface.co/blog/evaleval-aisi",
+        "date": "2026-09-22"
+      },
+      {
+        "headline": "Hugging Face releases tokenizers v1",
+        "summary": "Version 1 of the tokenizers library encodes text 3 to 30 times faster than v0.23 while producing identical tokens.",
+        "source": "Hugging Face",
+        "url": "https://huggingface.co/blog/tokenizers-v1",
+        "date": "2026-09-21"
+      }
+    ],
+    "campus": []
+  }
+}
