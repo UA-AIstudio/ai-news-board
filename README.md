@@ -57,14 +57,18 @@ banner, run `python scripts/build.py --preview --out site/dev` and open
 - `news.json` does not match `schema/news.schema.json` (including extra keys,
   or too few or too many items in a column).
 - Any link is not https or points outside the allowlist in `ALLOWED_DOMAINS`.
-- Any item date is in the future or more than 14 days old (Arizona time).
-- Any headline is 90 characters or longer.
+- Any item date is in the future (Arizona time).
+- Any headline is longer than 70 characters or any summary is longer than 160
+  characters (news and pinned items).
 - Any text in `news.json` or `pinned.json` contains an em dash.
 - Two items share a link.
-- With `--routine-pr BASE_REF`: any file other than `data/news.json` changed.
+- With `--routine-pr BASE_REF`: any file other than `data/news.json` changed,
+  or any item is more than 14 days old.
 
-Note: because of the 14-day rule, CI on any pull request fails if the news has
-not been updated for two weeks. Merge a fresh news update first.
+Without `--routine-pr` (design pull requests and deploys), items more than 14
+days old are printed as warnings and the run still passes, so stale news never
+blocks a code change or a deploy. CI applies `--routine-pr` to pull requests
+from `claude/` branches, so news updates must be fresh.
 
 ## How to review a news pull request
 

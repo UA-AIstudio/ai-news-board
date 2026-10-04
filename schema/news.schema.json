@@ -28,8 +28,8 @@
       "additionalProperties": false,
       "required": ["headline", "summary", "source", "url", "date"],
       "properties": {
-        "headline": {"type": "string", "minLength": 1, "maxLength": 89},
-        "summary": {"type": "string", "minLength": 1, "maxLength": 199},
+        "headline": {"type": "string", "minLength": 1, "maxLength": 70},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 160},
         "source": {"type": "string", "minLength": 1, "maxLength": 60},
         "url": {"type": "string", "pattern": "^https://[^\\s]+$"},
         "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
@@ -40,8 +40,8 @@
       "additionalProperties": false,
       "required": ["headline", "summary", "source", "url"],
       "properties": {
-        "headline": {"type": "string", "minLength": 1, "maxLength": 89},
-        "summary": {"type": "string", "minLength": 1, "maxLength": 199},
+        "headline": {"type": "string", "minLength": 1, "maxLength": 70},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 160},
         "source": {"type": "string", "minLength": 1, "maxLength": 60},
         "url": {"type": "string", "pattern": "^https://[^\\s]+$"}
       }

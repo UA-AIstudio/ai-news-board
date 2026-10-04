@@ -3,7 +3,7 @@
   "columns": {
     "models": [
       {
-        "headline": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "headline": "Model A released",
         "summary": "A short factual summary.",
         "source": "Anthropic",
         "url": "https://www.anthropic.com/news/a",
@@ -27,7 +27,7 @@
     "tools": [
       {
         "headline": "Tool A released",
-        "summary": "A short factual summary.",
+        "summary": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.",
         "source": "Hugging Face",
         "url": "https://huggingface.co/blog/a",
         "date": "2026-06-15"
