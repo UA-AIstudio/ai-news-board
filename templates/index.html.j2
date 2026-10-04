@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Latest AI News</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="masthead">
+    <h1>Latest AI News</h1>
+    <p class="updated">Updated {{ updated }} Arizona time</p>
+  </header>
+  <main class="columns">
+    {% for column in columns %}
+    <section class="column{% if column["items"]|length > 4 %} dense{% endif %}" aria-labelledby="col-{{ column.key }}">
+      <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
+      <ol class="items">
+        {% for item in column["items"] %}
+        <li class="item">
+          <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
+          <p class="summary">{{ item.summary }}</p>
+          <p class="meta">{{ item.source }}{% if item.date %}, {{ item.date }}{% endif %} <span class="domain">{{ item.domain }}</span></p>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endfor %}
+  </main>
+  <footer class="footer">AI+ Studio, University of Arizona Libraries</footer>
+  <script>
+    // Every 10 minutes, check that the site is reachable and reload to pick up new news.
+    // If the network or the site is down, keep showing the current page.
+    setInterval(function () {
+      fetch(window.location.href, { cache: "no-store" })
+        .then(function (response) {
+          if (response.ok) {
+            window.location.reload();
+          }
+        })
+        .catch(function () {});
+    }, 10 * 60 * 1000);
+  </script>
+</body>
+</html>
