@@ -68,6 +68,63 @@ def test_studio_status(at, is_open, text):
     assert status_at(at) == {"open": is_open, "text": text}
 
 
+THANKSGIVING = [
+    {"date": "2026-11-26", "note": "Thanksgiving"},
+    {"date": "2026-11-27", "note": "Thanksgiving break"},
+]
+
+
+def closure_status_at(arizona_time: str, closures):
+    return run_board(
+        "board.studioStatus(v.hours, Date.parse(v.at + ':00-07:00'), v.closures)",
+        hours=STUDIO_HOURS, at=arizona_time, closures=closures,
+    )
+
+
+# November 26, 2026 is a Thursday.
+
+@needs_node
+@pytest.mark.parametrize(
+    "at, text",
+    [
+        ("2026-11-26T12:00", "Closed today, Thanksgiving"),        # during normal hours
+        ("2026-11-26T08:00", "Closed today, Thanksgiving"),        # before opening
+        ("2026-11-27T16:00", "Closed today, Thanksgiving break"),
+        ("2026-11-25T19:00", "Closed, opens Monday 11am"),         # skips both closed days
+        ("2026-11-25T09:00", "Closed, opens today 11am"),          # day before is normal
+        ("2026-11-28T12:00", "Closed, opens Monday 11am"),         # weekend after
+    ],
+)
+def test_studio_status_with_closures(at, text):
+    assert closure_status_at(at, THANKSGIVING) == {"open": False, "text": text}
+
+
+@needs_node
+def test_closure_on_a_weekend_shows_the_note():
+    status = closure_status_at("2026-11-28T12:00", [{"date": "2026-11-28", "note": "Building maintenance"}])
+    assert status == {"open": False, "text": "Closed today, Building maintenance"}
+
+
+@needs_node
+def test_long_closure_names_the_reopening_date():
+    winter = [{"date": f"2026-12-{d:02d}", "note": "Winter break"} for d in range(14, 32)]
+    assert closure_status_at("2026-12-11T19:00", winter) == {
+        "open": False, "text": "Closed, opens January 1 11am",
+    }
+
+
+@needs_node
+def test_closures_do_not_affect_other_days():
+    assert closure_status_at("2026-11-24T12:00", THANKSGIVING) == {"open": True, "text": "Open now, until 6pm"}
+
+
+@needs_node
+def test_arizona_date():
+    # 01:00 UTC on October 6 is still October 5 in Arizona.
+    parts = run_board("board.arizonaParts(Date.parse('2026-10-06T01:00:00Z'))")
+    assert parts == {"date": "2026-10-05", "day": 1, "minutes": 18 * 60}
+
+
 @needs_node
 def test_studio_status_uses_arizona_time():
     # 01:00 UTC on Tuesday is 6:00 pm Monday in Arizona: just closed.
@@ -144,6 +201,15 @@ def test_page_has_live_hooks_and_no_em_dash(good_news, good_pinned):
     assert EM_DASH not in html
 
 
+def test_closures_are_passed_to_the_page(good_news, good_pinned):
+    good_pinned[0]["closures"] = THANKSGIVING
+    html = build.render(good_news, good_pinned)
+    data = html[html.index('id="studio-hours">') + len('id="studio-hours">'):]
+    data = json.loads(data[:data.index("</script>")])
+    assert data["hours"] == good_pinned[0]["hours"]
+    assert data["closures"] == THANKSGIVING
+
+
 def test_no_hours_means_no_status_badge(good_news, good_pinned):
     for p in good_pinned:
         p.pop("hours", None)
@@ -181,3 +247,29 @@ def test_pinned_hours_schema(good_news, good_pinned):
     assert validate.validate(good_news, good_pinned, now=FIXTURE_NOW)
     good_pinned[0]["hours"] = {"mon": None}
     assert any("required" in e for e in validate.validate(good_news, good_pinned, now=FIXTURE_NOW))
+
+
+@pytest.mark.parametrize(
+    "closures, expected",
+    [
+        ([{"date": "2026-11-26", "note": "x" * 40}], None),
+        ([], None),
+        ([{"date": "2026-11-26", "note": "x" * 41}], "is too long"),
+        ([{"date": "2026-11-26", "note": ""}], "should be non-empty"),
+        ([{"date": "2026-11-26"}], "'note' is a required property"),
+        ([{"date": "2026-11-26", "note": "Holiday", "hours": "none"}], "Additional properties"),
+        ([{"date": "2026-13-01", "note": "Holiday"}], "does not match"),
+        ([{"date": "11/26/2026", "note": "Holiday"}], "does not match"),
+        ([{"date": "2026-02-30", "note": "Holiday"}], "not a real date"),
+        ([{"date": "2026-11-26", "note": "A"}, {"date": "2026-11-26", "note": "B"}], "listed more than once"),
+        ([{"date": "2026-11-26", "note": f"Closed {EM_DASH} holiday"}], "em dash"),
+        ({"date": "2026-11-26", "note": "Holiday"}, "is not of type 'array'"),
+    ],
+)
+def test_closures_schema(good_news, good_pinned, closures, expected):
+    good_pinned[0]["closures"] = closures
+    errors = validate.validate(good_news, good_pinned, now=FIXTURE_NOW)
+    if expected is None:
+        assert errors == []
+    else:
+        assert any(expected in e for e in errors), errors

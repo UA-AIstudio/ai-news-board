@@ -19,8 +19,22 @@ Review flow: check the dev link, then merge the `claude/dev` pull request.
 - Public information only. No personal data of any kind.
 - No secrets. No API keys anywhere.
 - No icons, emojis, or decorative graphics.
+- Colors: Arizona Blue #0C234B and white, with Arizona Red #AB0520 as the only
+  accent (used for "now" signals such as the spotlight progress bar and NEW
+  tags). No other colors.
 - No Claude attribution in commits, pull requests, or the page.
 - Python 3.12 in workflows.
+
+## Motion rules
+
+- Animate only `opacity` and `transform`. Use `will-change` sparingly.
+- Pause all animation and timers while the page is hidden (`document.hidden`).
+- Respect `prefers-reduced-motion`: no carousel motion, ticker, highlight,
+  background drift, or pulse; show static content.
+- All content must be readable without JavaScript.
+- Text never moves while it is being read, except the ticker. Spotlight slides
+  move only during their short transition, and the burn-in shift is at most
+  2px every 10 minutes.
 
 ## Workflow rules
 
@@ -41,12 +55,13 @@ Review flow: check the dev link, then merge the `claude/dev` pull request.
 
 ```
 data/news.json              content written by the Routine
-data/pinned.json            hand-edited campus items, exempt from the 14-day rule
+data/pinned.json            hand-edited campus items, Studio hours and closures
 schema/news.schema.json     JSON Schema for news.json (and pinned items)
 scripts/validate.py         all checks; exits 1 on any failure
 scripts/build.py            data + template -> site/index.html
 templates/index.html.j2     page template (Jinja2, autoescape on)
-static/style.css            page styles (navy #0C234B and white only)
+static/style.css            page styles
+static/board.js             page behavior, inlined into the page by build.py
 routine/PROMPT.md           instructions for the daily Routine
 tests/                      pytest tests and fixtures
 .github/workflows/ci.yml    pull request checks
