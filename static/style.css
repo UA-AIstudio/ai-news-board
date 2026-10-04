@@ -126,6 +126,19 @@ h2 {
   content: "\00B7\00A0";
 }
 
+/* Dev preview only: a solid white bar so a preview is never mistaken for the live board. */
+.preview-banner {
+  margin: 0 0 clamp(8px, 0.8vw, 18px);
+  padding: clamp(6px, 0.5vw, 12px) var(--gutter);
+  background: var(--white);
+  color: var(--navy);
+  font-size: clamp(18px, 1.5vw, 34px);
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .footer {
   padding-top: clamp(6px, 0.6vw, 14px);
   border-top: 0.12vw solid var(--white);

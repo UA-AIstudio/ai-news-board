@@ -4,19 +4,31 @@ A one-page news board for the TV in the AI+ Studio, University of Arizona
 Libraries (Weaver Science-Engineering Library, room 212). It shows recent AI
 news in three columns: New models, Tools and research, and On campus.
 
-Live page: https://ua-aistudio.github.io/ai-news-board/
+- Live board (shown on the TV, built from `main`):
+  https://ua-aistudio.github.io/ai-news-board/
+- Dev preview (the pending news update, built from `claude/dev`):
+  https://ua-aistudio.github.io/ai-news-board/dev/
+
+The dev preview has a "Preview, not live. Awaiting review." banner and exists
+only while the `claude/dev` branch exists.
 
 ## How the daily loop works
 
-1. Once a day a Claude Code Routine follows `routine/PROMPT.md`. It reads AI
-   news from a short list of allowed sites, writes `data/news.json`, runs the
-   validator, and opens a pull request from a `claude/` branch.
-2. CI runs the tests, validates the data, builds the page, and checks that the
+1. Once a day a Claude Code Routine follows `routine/PROMPT.md`. It resets the
+   `claude/dev` branch to `main`, reads AI news from a short list of allowed
+   sites, writes `data/news.json`, runs the validator, and force-pushes
+   `claude/dev`.
+2. The push deploys the site: the live board from `main` at `/`, and the
+   preview from `claude/dev` at `/dev/`. Both use the template and scripts on
+   `main`; only the data comes from `claude/dev`. If the `claude/dev` data fails
+   validation, only the live board is deployed and the run shows a warning.
+3. The Routine opens a pull request from `claude/dev` into `main`, or updates
+   the one already open. There is never more than one.
+4. CI runs the tests, validates the data, builds the page, and checks that the
    pull request changes only `data/news.json`.
-3. A person reviews the pull request and merges it.
-4. Merging to `main` builds `site/index.html` from the fixed template and
-   deploys it to GitHub Pages.
-5. The TV page checks the site every 10 minutes and reloads when the site is
+5. A person checks the dev link, then merges.
+6. Merging to `main` deploys the new live board.
+7. The TV page checks the site every 10 minutes and reloads when the site is
    reachable. If the network is down, it keeps showing the current page.
 
 The Routine never edits code or HTML. Campus items that should always show
@@ -33,7 +45,9 @@ python scripts/validate.py
 python scripts/build.py
 ```
 
-Then open `site/index.html` in a browser. For a TV preview, set the window to
+Then open `site/index.html` in a browser. To see the preview version with the
+banner, run `python scripts/build.py --preview --out site/dev` and open
+`site/dev/index.html`. For a TV preview, set the window to
 1920x1080 and use full screen.
 
 ## What the validator checks
@@ -55,13 +69,17 @@ not been updated for two weeks. Merge a fresh news update first.
 ## How to review a news pull request
 
 1. Check that CI passed.
-2. Open the Files tab. Only `data/news.json` should be changed.
-3. Open each new link. Confirm the page exists, is on the right topic, and has
+2. Open the dev link, https://ua-aistudio.github.io/ai-news-board/dev/, and
+   check that the board looks right: three columns, nothing cut off, the
+   "Updated" time is today.
+3. Open the Files tab. Only `data/news.json` should be changed.
+4. Open each new link. Confirm the page exists, is on the right topic, and has
    the date shown in the item.
-4. Read each headline and summary. They should match the source, be neutral
+5. Read each headline and summary. They should match the source, be neutral
    and factual, and contain no personal names of students or staff.
-5. Merge. The page updates within a few minutes. If something is wrong, close
-   the pull request instead; the TV keeps showing the last merged version.
+6. Merge. The live board updates within a few minutes. If something is wrong,
+   close the pull request instead; the TV keeps showing the last merged
+   version, and the next Routine run starts over from `main`.
 
 ## How to change the design
 

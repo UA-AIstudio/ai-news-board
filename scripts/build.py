@@ -3,10 +3,12 @@
 
 Usage:
     python scripts/build.py
+    python scripts/build.py --preview --data-dir ../dev/data --out site/dev
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
 import sys
@@ -73,7 +75,7 @@ def build_context(news: dict, pinned: list) -> dict:
     return {"updated": format_updated(news["updated"]), "columns": columns}
 
 
-def render(news: dict, pinned: list) -> str:
+def render(news: dict, pinned: list, preview: bool = False) -> str:
     env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
         autoescape=True,
@@ -81,20 +83,33 @@ def render(news: dict, pinned: list) -> str:
         trim_blocks=True,
         lstrip_blocks=True,
     )
-    return env.get_template("index.html.j2").render(**build_context(news, pinned))
+    context = build_context(news, pinned)
+    return env.get_template("index.html.j2").render(**context, preview=preview)
 
 
-def main() -> int:
-    news = json.loads((DATA_DIR / "news.json").read_text(encoding="utf-8"))
-    pinned = json.loads((DATA_DIR / "pinned.json").read_text(encoding="utf-8"))
-    html = render(news, pinned)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--preview",
+        action="store_true",
+        help='build the dev preview: adds a "Preview, not live" banner and noindex',
+    )
+    parser.add_argument("--data-dir", type=Path, help="folder with news.json and pinned.json (default: data/)")
+    parser.add_argument("--out", type=Path, help="output folder (default: site/)")
+    args = parser.parse_args(argv)
+    data_dir = args.data_dir or DATA_DIR
+    out = args.out or SITE_DIR
 
-    if SITE_DIR.exists():
-        shutil.rmtree(SITE_DIR)
-    SITE_DIR.mkdir(parents=True)
-    (SITE_DIR / "index.html").write_text(html, encoding="utf-8")
-    shutil.copy2(STATIC_DIR / "style.css", SITE_DIR / "style.css")
-    print(f"Built {SITE_DIR / 'index.html'}")
+    news = json.loads((data_dir / "news.json").read_text(encoding="utf-8"))
+    pinned = json.loads((data_dir / "pinned.json").read_text(encoding="utf-8"))
+    html = render(news, pinned, preview=args.preview)
+
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    (out / "index.html").write_text(html, encoding="utf-8")
+    shutil.copy2(STATIC_DIR / "style.css", out / "style.css")
+    print(f"Built {out / 'index.html'}{' (preview)' if args.preview else ''}")
     return 0
 
 
