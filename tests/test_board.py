@@ -4,8 +4,8 @@ The hours and NEW tag logic runs in the browser (static/board.js), so those
 tests call it with Node.js. GitHub's ubuntu-latest runners include Node.
 """
 
-import hashlib
 import json
+import re
 import shutil
 import subprocess
 
@@ -217,27 +217,38 @@ def test_no_hours_means_no_status_badge(good_news, good_pinned):
     assert 'id="studio-status"' not in html and 'id="studio-hours"' not in html
 
 
-def _digest(matrix):
-    return hashlib.sha256("".join("1" if c else "0" for row in matrix for c in row).encode()).hexdigest()[:16]
+def _dark_modules_in_svg(svg: str) -> int:
+    path = re.search(r'<path fill="#0C234B" d="([^"]*)"', svg).group(1)
+    return sum(int(w) for w in re.findall(r"h(\d+)v1", path))
 
 
 @pytest.mark.parametrize(
-    "text, mask, size, digest",
-    [
-        # Reference digests from the python-qrcode library (level M, byte mode).
-        ("https://lib.arizona.edu/study/ai-studio", 2, 29, "cebe1949b1d1937e"),
-        ("https://example.org/" + "x" * 180, 5, 57, "63550de6aea688d6"),
-    ],
+    "url",
+    ["https://lib.arizona.edu/study/ai-studio", "https://example.org/" + "x" * 300],
 )
-def test_qr_matches_reference(text, mask, size, digest):
-    matrix = build.qr_matrix(text, mask=mask)
-    assert len(matrix) == size
-    assert _digest(matrix) == digest
+def test_qr_svg_draws_every_module_with_quiet_zone(url):
+    matrix = build.qr_matrix(url)
+    size = len(matrix)
+    assert size >= 21 and (size - 17) % 4 == 0
+    svg = str(build.qr_svg(url, "example"))
+    total = size + 2 * build.QR_QUIET_ZONE
+    assert f'viewBox="0 0 {total} {total}"' in svg
+    assert f'<rect width="{total}" height="{total}" fill="#FFFFFF"/>' in svg
+    assert _dark_modules_in_svg(svg) == sum(sum(row) for row in matrix)
+    # Finder pattern at the top left, offset by the quiet zone.
+    assert all(matrix[0][x] for x in range(7))
 
 
-def test_qr_too_long_raises():
-    with pytest.raises(ValueError):
-        build.qr_matrix("https://example.org/" + "x" * 300)
+def test_qr_svg_escapes_label():
+    svg = str(build.qr_svg("https://example.org/", '<b>"x"</b>'))
+    assert "<b>" not in svg and "&lt;b&gt;" in svg
+
+
+def test_every_slide_has_a_captioned_qr(good_news, good_pinned):
+    html = build.render(good_news, good_pinned)
+    slides = len(good_news["columns"]["models"]) + len(good_news["columns"]["tools"])
+    assert html.count('<figure class="slide-qr">') == slides
+    assert html.count("<figcaption>Scan to read the source</figcaption>") == slides
 
 
 def test_pinned_hours_schema(good_news, good_pinned):

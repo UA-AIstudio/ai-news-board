@@ -204,8 +204,81 @@ h1 {
   margin-top: 0.4em;
 }
 
+/* Slides with metrics get a third column for the bars. */
+.slide.has-metrics {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 21vw) auto;
+}
+
+.metric-list {
+  display: grid;
+  gap: clamp(8px, 0.6vw, 24px);
+  padding: 0;
+  list-style: none;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.6em;
+  row-gap: clamp(3px, 0.22vw, 9px);
+}
+
+.metric-label {
+  font-size: clamp(12px, 0.82vw, 32px);
+  color: var(--soft);
+  overflow-wrap: anywhere;
+}
+
+.metric-value {
+  font-size: clamp(16px, 1.15vw, 44px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.metric-track {
+  grid-column: 1 / -1;
+  height: clamp(5px, 0.42vw, 16px);
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+/* The bar length is set at build time; the value text never animates. */
+.metric-fill {
+  display: block;
+  height: 100%;
+  background: var(--red);
+  transform: scaleX(var(--fill));
+  transform-origin: left center;
+}
+
+.js .slide.is-active .metric-fill {
+  animation: grow 800ms var(--ease) both;
+}
+
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(var(--fill)); }
+}
+
+.metric-source {
+  margin-top: clamp(6px, 0.5vw, 20px);
+  font-size: clamp(11px, 0.72vw, 28px);
+  color: var(--soft);
+}
+
+/* QR code: a white square with a quiet zone, at least 160px at 1080p. */
 .slide-qr {
-  width: clamp(88px, 7.4vw, 284px);
+  margin: 0;
+  width: clamp(160px, 8.6vw, 330px);
+}
+
+.slide-qr figcaption {
+  margin-top: clamp(4px, 0.3vw, 12px);
+  font-size: clamp(11px, 0.68vw, 26px);
+  color: var(--soft);
+  text-align: center;
 }
 
 .qr {
@@ -528,6 +601,7 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   .ticker-track,
   .progress-fill,
+  .metric-fill,
   .status.is-open .status-dot::after {
     animation: none !important;
   }

@@ -64,7 +64,13 @@ normally be open, add an entry to `closures` on the "AI+ Studio hours" item in
 ## What the TV page does
 
 - A spotlight band cycles through every model and tool item, newest first,
-  12 seconds each, with a QR code for the item's link.
+  12 seconds each. Each slide has a QR code for the item's source ("Scan to
+  read the source"), generated at build time with the `qrcode` package.
+- Items with metrics show them on their slide as Arizona Red bars that grow
+  in over 800ms, with the label, the exact value, and "Reported by ...".
+  Percentages fill against 100; other values fill against the largest value
+  with the same unit on that item, and a value with nothing to compare
+  against shows as text only.
 - A live Arizona clock sits top right, above the "Updated" line.
 - Items dated within 48 hours of the page load get a red NEW tag.
 - A ticker above the footer scrolls every headline.
@@ -105,6 +111,10 @@ banner, run `python scripts/build.py --preview --out site/dev` and open
   characters (news and pinned items).
 - Any text in `news.json` or `pinned.json` contains an em dash.
 - Two items share a link.
+- An item has more than 3 metrics, a metric label over 30 characters, a unit
+  over 4 characters, a value that is not a finite number, or a `%` value
+  outside 0 to 100.
+- An item has metrics without `reported_by`, or `reported_by` without metrics.
 - With `--routine-pr BASE_REF`: any file other than `data/news.json` changed,
   or any item is more than 14 days old.
 
@@ -124,6 +134,9 @@ from `claude/` branches, so news updates must be fresh.
    the date shown in the item.
 5. Read each headline and summary. They should match the source, be neutral
    and factual, and contain no personal names of students or staff.
+   If an item has metrics, find each number on the source page and check that
+   the value, unit and label match exactly. If any number is not on the page,
+   ask for it to be removed.
 6. Merge. The live board updates within a few minutes. If something is wrong,
    close the pull request instead; the TV keeps showing the last merged
    version, and the next Routine run starts over from `main`.

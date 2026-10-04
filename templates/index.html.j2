@@ -27,14 +27,33 @@
       <h2 class="visually-hidden" id="spotlight-title">Spotlight</h2>
       <div class="slides">
         {% for item in spotlight %}
-        <article class="slide{% if loop.first %} is-active{% endif %}" data-date="{{ item.iso_date }}"{% if not loop.first %} aria-hidden="true"{% endif %}>
+        <article class="slide{% if item.metrics %} has-metrics{% endif %}{% if loop.first %} is-active{% endif %}" data-date="{{ item.iso_date }}"{% if not loop.first %} aria-hidden="true"{% endif %}>
           <div class="slide-text">
             <p class="slide-kind">{{ item.kind }} <span class="tag-new" hidden>NEW</span></p>
             <h3 class="slide-headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
             <p class="slide-summary">{{ item.summary }}</p>
             <p class="meta">{{ item.source }}, {{ item.date }} <span class="domain">{{ item.domain }}</span></p>
           </div>
-          <div class="slide-qr">{{ item.qr }}</div>
+          {% if item.metrics %}
+          <div class="metrics">
+            <ul class="metric-list">
+              {% for metric in item.metrics %}
+              <li class="metric">
+                <span class="metric-label">{{ metric.label }}</span>
+                <span class="metric-value">{{ metric.text }}</span>
+                {% if metric.fill is not none %}
+                <span class="metric-track"><span class="metric-fill" style="--fill: {{ metric.fill }}"></span></span>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+            <p class="metric-source">Reported by {{ item.reported_by }}</p>
+          </div>
+          {% endif %}
+          <figure class="slide-qr">
+            {{ item.qr }}
+            <figcaption>Scan to read the source</figcaption>
+          </figure>
         </article>
         {% endfor %}
       </div>
