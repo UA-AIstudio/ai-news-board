@@ -38,8 +38,9 @@ Prefer 4 items per column. Newest first within each column.
   changer", "revolutionary"), no exclamation marks, no opinions.
 - No em dashes anywhere. Use commas, periods, or the word "to".
 - No personal names of students or staff. Company and product names are fine.
-- `headline`: under 90 characters; aim for 70 or fewer so it fits on two lines.
-- `summary`: one sentence, under 200 characters; aim for 160 or fewer.
+- `headline`: 70 characters or fewer (the validator enforces this).
+- `summary`: one sentence, 160 characters or fewer (the validator enforces
+  this).
 - `source`: the publisher, for example "Anthropic", "Google", "Hugging Face",
   "arXiv", "Office of Responsible AI", "University of Arizona Libraries".
 - `url`: https only.
@@ -69,14 +70,20 @@ request is merged.
 4. Edit only `data/news.json`. Do not touch any other file. Set `updated` to the
    current time in America/Phoenix with the offset, for example
    `2026-10-04T06:00:00-07:00`.
-5. Run `python scripts/validate.py`. Read every error, fix the data, and run it
-   again until it prints "Validation passed."
+5. Run the validator in Routine mode:
+   ```
+   python scripts/validate.py --routine-pr origin/main
+   ```
+   Read every error, fix the data, and run it again until it prints
+   "Validation passed." Always pass `--routine-pr`: without it, items older
+   than 14 days are only warnings, but in your updates they are errors.
 6. If you cannot reach 3 valid items in `models` or 3 valid items in `tools`,
    stop. Do not commit, do not push, and do not change any pull request.
    Report why.
 7. Check that `git status` shows only `data/news.json` as changed. Commit with
-   the message `News update YYYY-MM-DD` (today's Arizona date), then
-   force-push:
+   the message `News update YYYY-MM-DD` (today's Arizona date), run
+   `python scripts/validate.py --routine-pr origin/main` once more (it now also
+   confirms the commit changes only `data/news.json`), then force-push:
    ```
    git push --force origin claude/dev
    ```

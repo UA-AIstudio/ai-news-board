@@ -30,6 +30,10 @@ Review flow: check the dev link, then merge the `claude/dev` pull request.
   comes from `claude/dev`. Preview builds use `build.py --preview`.
 - Design changes go through a branch and pull request. Never push to `main`.
 - Never weaken `scripts/validate.py` without a reviewed pull request.
+- Headlines are 70 characters or fewer and summaries 160 or fewer, enforced in
+  both `schema/news.schema.json` and `scripts/validate.py`; change both together.
+- The 14-day freshness rule is an error only with `validate.py --routine-pr`
+  (Routine pull requests). Elsewhere it is a warning.
 - The allowlist lives in `scripts/validate.py` (`ALLOWED_DOMAINS`) and in the
   Routine environment's network settings; change both together.
 
