@@ -3,6 +3,8 @@ import json
 import build
 from conftest import ROOT, load_fixture
 
+BANNER = "Preview, not live. Awaiting review."
+
 
 def test_format_updated():
     assert build.format_updated("2026-10-04T08:05:00-07:00") == "Sunday, October 4, 8:05 am"
@@ -54,6 +56,38 @@ def test_html_is_escaped(good_news, good_pinned):
 
 def test_main_writes_site(tmp_path, monkeypatch):
     monkeypatch.setattr(build, "SITE_DIR", tmp_path / "site")
-    assert build.main() == 0
+    assert build.main([]) == 0
     assert (tmp_path / "site" / "index.html").is_file()
     assert (tmp_path / "site" / "style.css").is_file()
+    assert BANNER not in (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
+
+
+def test_live_build_has_no_preview_banner(good_news, good_pinned):
+    html = build.render(good_news, good_pinned)
+    assert BANNER not in html
+    assert "preview-banner" not in html
+
+
+def test_preview_build_has_banner_and_noindex(good_news, good_pinned):
+    html = build.render(good_news, good_pinned, preview=True)
+    assert BANNER in html
+    assert '<meta name="robots" content="noindex">' in html
+    # The banner comes before the page title so it is the first thing on screen.
+    assert html.index(BANNER) < html.index("<h1>Latest AI News</h1>")
+
+
+def test_preview_cli_uses_data_dir_and_out(tmp_path):
+    data_dir = tmp_path / "dev" / "data"
+    data_dir.mkdir(parents=True)
+    news = load_fixture("good.json")
+    news["columns"]["models"][0]["headline"] = "Headline only on the dev branch"
+    (data_dir / "news.json").write_text(json.dumps(news), encoding="utf-8")
+    (data_dir / "pinned.json").write_text(json.dumps(load_fixture("pinned_good.json")), encoding="utf-8")
+    out = tmp_path / "site" / "dev"
+
+    assert build.main(["--preview", "--data-dir", str(data_dir), "--out", str(out)]) == 0
+    html = (out / "index.html").read_text(encoding="utf-8")
+    assert BANNER in html
+    assert '<meta name="robots" content="noindex">' in html
+    assert "Headline only on the dev branch" in html
+    assert (out / "style.css").is_file()
