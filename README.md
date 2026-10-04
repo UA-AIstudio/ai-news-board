@@ -34,6 +34,28 @@ only while the `claude/dev` branch exists.
 The Routine never edits code or HTML. Campus items that should always show
 (Studio hours, the AI desk) live in `data/pinned.json` and are edited by hand.
 
+The Studio hours item also has structured `hours` (24-hour times, Arizona
+time, `null` for closed days). The page uses them to show "Open now, until
+6pm" or "Closed, opens Monday 11am". Holiday closures are not known to the
+page: for a holiday or a temporary change, edit `hours` in `data/pinned.json`
+in a pull request, and change it back afterwards.
+
+## What the TV page does
+
+- A spotlight band cycles through every model and tool item, newest first,
+  12 seconds each, with a QR code for the item's link.
+- A live Arizona clock sits top right, above the "Updated" line.
+- Items dated within 48 hours of the page load get a red NEW tag.
+- A ticker above the footer scrolls every headline.
+- Each column softly highlights one item at a time.
+- The background drifts very slowly, and the whole layout shifts by up to
+  2px every 10 minutes to protect the TV from burn-in.
+- Every 10 minutes the page checks that the site is reachable and reloads
+  between spotlight slides. If the network is down, it keeps the current page.
+- All motion pauses while the page is hidden and turns off for viewers who
+  ask their system for reduced motion. Without JavaScript, every item is
+  still shown.
+
 ## Local setup
 
 Requires Python 3.12.
