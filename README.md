@@ -36,9 +36,30 @@ The Routine never edits code or HTML. Campus items that should always show
 
 The Studio hours item also has structured `hours` (24-hour times, Arizona
 time, `null` for closed days). The page uses them to show "Open now, until
-6pm" or "Closed, opens Monday 11am". Holiday closures are not known to the
-page: for a holiday or a temporary change, edit `hours` in `data/pinned.json`
-in a pull request, and change it back afterwards.
+6pm" or "Closed, opens Monday 11am".
+
+### Adding a holiday or other closure
+
+The page does not know about holidays. To close the Studio on a day it would
+normally be open, add an entry to `closures` on the "AI+ Studio hours" item in
+`data/pinned.json`, in a pull request:
+
+```json
+"closures": [
+  {"date": "2026-11-26", "note": "Thanksgiving"},
+  {"date": "2026-11-27", "note": "Thanksgiving break"}
+]
+```
+
+- `date` is the Arizona date, `YYYY-MM-DD`. Each date may appear once.
+- `note` is required, 1 to 40 characters, with no em dashes.
+- On that date the badge shows "Closed today, Thanksgiving". On the days
+  before, "Closed, opens ..." skips closed dates. For a break longer than a
+  week it names the reopening date, for example "opens January 4 11am".
+- Past entries do no harm, but remove them now and then to keep the list short.
+- For a permanent change in hours, edit `hours` instead.
+
+`python scripts/validate.py` checks the format and that each date is real.
 
 ## What the TV page does
 
