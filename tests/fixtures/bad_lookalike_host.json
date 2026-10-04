@@ -1,0 +1,60 @@
+{
+  "updated": "2026-06-15T08:00:00-07:00",
+  "columns": {
+    "models": [
+      {
+        "headline": "Model A released",
+        "summary": "A short factual summary.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/a",
+        "date": "2026-06-14"
+      },
+      {
+        "headline": "Model B released",
+        "summary": "A short factual summary.",
+        "source": "OpenAI",
+        "url": "https://openai.com/index/b/",
+        "date": "2026-06-10"
+      },
+      {
+        "headline": "Model C released",
+        "summary": "A short factual summary.",
+        "source": "Google",
+        "url": "https://blog.google/technology/c/",
+        "date": "2026-06-01"
+      }
+    ],
+    "tools": [
+      {
+        "headline": "Tool A released",
+        "summary": "A short factual summary.",
+        "source": "Hugging Face",
+        "url": "https://evilanthropic.com/story",
+        "date": "2026-06-15"
+      },
+      {
+        "headline": "Paper B published",
+        "summary": "A short factual summary.",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2606.00001",
+        "date": "2026-06-12"
+      },
+      {
+        "headline": "Tool C released",
+        "summary": "A short factual summary.",
+        "source": "GitHub",
+        "url": "https://github.com/example/tool-c",
+        "date": "2026-06-11"
+      }
+    ],
+    "campus": [
+      {
+        "headline": "Campus update",
+        "summary": "A short factual summary.",
+        "source": "Office of Responsible AI",
+        "url": "https://responsibleai.arizona.edu/news/update",
+        "date": "2026-06-13"
+      }
+    ]
+  }
+}
