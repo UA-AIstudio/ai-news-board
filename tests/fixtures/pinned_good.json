@@ -1,4 +1,38 @@
 [
-  {"headline": "Studio hours", "summary": "Open weekdays.", "source": "University of Arizona Libraries", "url": "https://lib.arizona.edu/study/ai-studio"},
-  {"headline": "Help desk", "summary": "Staff can help.", "source": "University of Arizona Libraries", "url": "https://lib.arizona.edu/study/ai-studio"}
+  {
+    "headline": "Studio hours",
+    "summary": "Open weekdays.",
+    "source": "University of Arizona Libraries",
+    "url": "https://lib.arizona.edu/study/ai-studio",
+    "hours": {
+      "mon": [
+        "11:00",
+        "18:00"
+      ],
+      "tue": [
+        "11:00",
+        "18:00"
+      ],
+      "wed": [
+        "11:00",
+        "18:00"
+      ],
+      "thu": [
+        "11:00",
+        "18:00"
+      ],
+      "fri": [
+        "11:00",
+        "17:00"
+      ],
+      "sat": null,
+      "sun": null
+    }
+  },
+  {
+    "headline": "Help desk",
+    "summary": "Staff can help.",
+    "source": "University of Arizona Libraries",
+    "url": "https://lib.arizona.edu/study/ai-studio"
+  }
 ]
