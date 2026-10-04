@@ -46,6 +46,14 @@ Review flow: check the dev link, then merge the `claude/dev` pull request.
 - Never weaken `scripts/validate.py` without a reviewed pull request.
 - Headlines are 70 characters or fewer and summaries 160 or fewer, enforced in
   both `schema/news.schema.json` and `scripts/validate.py`; change both together.
+- Metrics are optional, at most 3 per item, and must be copied exactly from
+  the item's source page (never estimated, rounded, or combined).
+  `reported_by` is required with metrics and only allowed with them; `%`
+  values are 0 to 100. Bars are drawn only when they have a real scale
+  (percent of 100, or two or more metrics sharing a unit); the value text is
+  always the exact number and never animates.
+- QR codes are generated at build time with the `qrcode` package and inlined
+  as SVG, navy on a white square with a quiet zone, at least 160px at 1080p.
 - The 14-day freshness rule is an error only with `validate.py --routine-pr`
   (Routine pull requests). Elsewhere it is a warning.
 - The allowlist lives in `scripts/validate.py` (`ALLOWED_DOMAINS`) and in the

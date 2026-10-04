@@ -44,7 +44,35 @@ Prefer 4 items per column. Newest first within each column.
 - `source`: the publisher, for example "Anthropic", "Google", "Hugging Face",
   "arXiv", "Office of Responsible AI", "University of Arizona Libraries".
 - `url`: https only.
-- No other keys.
+- No other keys, except the optional metrics below.
+
+## Metrics (optional)
+
+An item may carry up to 3 numbers that the spotlight shows as bars. The
+shape looks like this (the numbers here are made up, for format only):
+
+```json
+"metrics": [
+  {"label": "Score on SWE-bench Verified", "value": 71.4, "unit": "%"},
+  {"label": "Output tokens per second", "value": 180}
+],
+"reported_by": "Anthropic"
+```
+
+- Add metrics only when the source page you opened states the exact numbers.
+- Copy each number exactly as the page states it. Never estimate, round,
+  convert, average, or combine numbers, and never take them from a different
+  page than the item's `url`.
+- If you are unsure about a number, its meaning, or its unit, leave the
+  metrics out. An item without metrics is always fine.
+- `label`: what the number measures, 30 characters or fewer, plain words.
+- `value`: the number only (no text). For `"unit": "%"` it must be 0 to 100.
+- `unit`: optional, 4 characters or fewer, for example `%`, `x`, `ms`, `s`.
+- `reported_by`: required with metrics. Who reported the numbers, as the page
+  says (for example "Anthropic" or "the paper's authors"). Do not add it
+  without metrics.
+- In the pull request description, quote the sentence from the source page
+  that states each number, so the reviewer can check it.
 
 ## Branch and pull request
 
