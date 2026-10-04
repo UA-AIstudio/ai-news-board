@@ -39,6 +39,7 @@ jobs:
       - name: Confirm page exists
         run: test -s site/index.html
 
+      # Covers the Routine's claude/dev branch and any other claude/ branch.
       - name: Check Routine pull request only changes data/news.json
         if: startsWith(github.head_ref, 'claude/')
         run: python scripts/validate.py --routine-pr "origin/${{ github.base_ref }}"
