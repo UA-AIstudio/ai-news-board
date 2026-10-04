@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import subprocess
 import sys
 from datetime import date, datetime, timedelta
@@ -35,6 +36,7 @@ TZ = ZoneInfo("America/Phoenix")
 MAX_AGE_DAYS = 14
 MAX_HEADLINE = 70
 MAX_SUMMARY = 160
+MAX_METRICS = 3
 EM_DASH = "\u2014"
 
 # The only sites news items may link to. A host passes if it equals one of
@@ -170,6 +172,34 @@ def check_lengths(items, label: str) -> list[str]:
     return errors
 
 
+def check_metrics(items) -> list[str]:
+    """Metrics need a reporter, finite values, and percentages from 0 to 100."""
+    errors = []
+    for loc, item in items:
+        metrics = item.get("metrics")
+        has_reporter = isinstance(item.get("reported_by"), str) and item["reported_by"].strip()
+        if metrics is not None and not has_reporter:
+            errors.append(f"news.json {loc}: has metrics, so reported_by is required")
+        if metrics is None and "reported_by" in item:
+            errors.append(f"news.json {loc}: reported_by is only used with metrics; remove it or add metrics")
+        if not isinstance(metrics, list):
+            continue
+        if len(metrics) > MAX_METRICS:
+            errors.append(f"news.json {loc}.metrics: {len(metrics)} metrics, at most {MAX_METRICS} allowed")
+        for i, metric in enumerate(metrics):
+            if not isinstance(metric, dict):
+                continue
+            value = metric.get("value")
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            where = f"news.json {loc}.metrics[{i}]"
+            if not math.isfinite(value):
+                errors.append(f"{where}.value: {value} is not a finite number")
+            elif metric.get("unit") == "%" and not 0 <= value <= 100:
+                errors.append(f"{where}.value: {value}% is outside 0 to 100")
+    return errors
+
+
 def check_closures(pinned_items) -> list[str]:
     """Closure dates must be real calendar dates and not repeat."""
     errors = []
@@ -272,6 +302,7 @@ def run_checks(
         errors += date_errors
         errors += check_updated(news, now)
         errors += check_lengths(items, "news.json")
+        errors += check_metrics(items)
         errors += check_duplicate_urls(news)
     if isinstance(pinned, list):
         pinned_items = [(f"[{i}]", p) for i, p in enumerate(pinned) if isinstance(p, dict)]
