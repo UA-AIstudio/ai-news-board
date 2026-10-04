@@ -4,46 +4,87 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0C234B">
   <title>Latest AI News</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  {% if preview %}
-  <div class="preview-banner" role="status">Preview, not live. Awaiting review.</div>
-  {% endif %}
-  <header class="masthead">
-    <h1>Latest AI News</h1>
-    <p class="updated">Updated {{ updated }} Arizona time</p>
-  </header>
-  <main class="columns">
-    {% for column in columns %}
-    <section class="column{% if column["items"]|length > 4 %} dense{% endif %}" aria-labelledby="col-{{ column.key }}">
-      <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
-      <ol class="items">
-        {% for item in column["items"] %}
-        <li class="item">
-          <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
-          <p class="summary">{{ item.summary }}</p>
-          <p class="meta">{{ item.source }}{% if item.date %}, {{ item.date }}{% endif %} <span class="domain">{{ item.domain }}</span></p>
-        </li>
+  <div class="backdrop" aria-hidden="true"></div>
+  <div class="stage" id="stage">
+    {% if preview %}
+    <div class="preview-banner" role="status">Preview, not live. Awaiting review.</div>
+    {% endif %}
+    <header class="masthead">
+      <h1>Latest AI News</h1>
+      <div class="timebox">
+        <p class="clock" id="clock" hidden></p>
+        <p class="updated">Updated {{ updated }} Arizona time</p>
+      </div>
+    </header>
+
+    {% if spotlight %}
+    <section class="spotlight" aria-roledescription="carousel" aria-labelledby="spotlight-title">
+      <h2 class="visually-hidden" id="spotlight-title">Spotlight</h2>
+      <div class="slides">
+        {% for item in spotlight %}
+        <article class="slide{% if loop.first %} is-active{% endif %}" data-date="{{ item.iso_date }}"{% if not loop.first %} aria-hidden="true"{% endif %}>
+          <div class="slide-text">
+            <p class="slide-kind">{{ item.kind }} <span class="tag-new" hidden>NEW</span></p>
+            <h3 class="slide-headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
+            <p class="slide-summary">{{ item.summary }}</p>
+            <p class="meta">{{ item.source }}, {{ item.date }} <span class="domain">{{ item.domain }}</span></p>
+          </div>
+          <div class="slide-qr">{{ item.qr }}</div>
+        </article>
         {% endfor %}
-      </ol>
+      </div>
+      <div class="spotlight-foot" aria-hidden="true">
+        <div class="progress"><span class="progress-fill" id="progress"></span></div>
+        <ol class="dots">
+          {% for item in spotlight %}
+          <li class="dot{% if loop.first %} is-active{% endif %}"></li>
+          {% endfor %}
+        </ol>
+        <span class="slide-count" id="slide-count">1 of {{ spotlight|length }}</span>
+      </div>
     </section>
-    {% endfor %}
-  </main>
-  <footer class="footer">AI+ Studio, University of Arizona Libraries</footer>
+    {% endif %}
+
+    <main class="columns">
+      {% for column in columns %}
+      <section class="column{% if column["items"]|length > 4 %} dense{% endif %}" aria-labelledby="col-{{ column.key }}">
+        <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
+        <ol class="items">
+          {% for item in column["items"] %}
+          <li class="item"{% if item.iso_date %} data-date="{{ item.iso_date }}"{% endif %}>
+            <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a>{% if item.iso_date %} <span class="tag-new" hidden>NEW</span>{% endif %}</h3>
+            {% if item.has_hours %}
+            <p class="status" id="studio-status" hidden><span class="status-dot"></span><span class="status-text"></span></p>
+            {% endif %}
+            <p class="summary">{{ item.summary }}</p>
+            <p class="meta">{{ item.source }}{% if item.date %}, {{ item.date }}{% endif %} <span class="domain">{{ item.domain }}</span></p>
+          </li>
+          {% endfor %}
+        </ol>
+      </section>
+      {% endfor %}
+    </main>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        {% for copy in range(2) %}
+        <span class="ticker-group">{% for headline in ticker %}<span class="ticker-item">{{ headline }}</span>{% endfor %}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <footer class="footer">AI+ Studio, University of Arizona Libraries</footer>
+  </div>
+  {% if hours %}
+  <script type="application/json" id="studio-hours">{{ hours|tojson }}</script>
+  {% endif %}
   <script>
-    // Every 10 minutes, check that the site is reachable and reload to pick up new news.
-    // If the network or the site is down, keep showing the current page.
-    setInterval(function () {
-      fetch(window.location.href, { cache: "no-store" })
-        .then(function (response) {
-          if (response.ok) {
-            window.location.reload();
-          }
-        })
-        .catch(function () {});
-    }, 10 * 60 * 1000);
+{{ board_js }}
   </script>
 </body>
 </html>
