@@ -7,6 +7,10 @@ Prints every problem it finds and exits 1 if there are any.
 Usage:
     python scripts/validate.py
     python scripts/validate.py --routine-pr origin/main
+
+Items older than 14 days are errors only with --routine-pr (the daily news
+update). In every other run (design pull requests, deploys) they are printed as
+warnings, so stale news never blocks a code change or a deploy.
 """
 
 from __future__ import annotations
@@ -29,7 +33,8 @@ SCHEMA_PATH = ROOT / "schema" / "news.schema.json"
 
 TZ = ZoneInfo("America/Phoenix")
 MAX_AGE_DAYS = 14
-MAX_HEADLINE = 89
+MAX_HEADLINE = 70
+MAX_SUMMARY = 160
 EM_DASH = "\u2014"
 
 # The only sites news items may link to. A host passes if it equals one of
@@ -112,8 +117,9 @@ def check_urls(items, label: str) -> list[str]:
     return errors
 
 
-def check_dates(news: dict, today: date) -> list[str]:
-    errors = []
+def check_dates(news: dict, today: date) -> tuple[list[str], list[str]]:
+    """Return (errors, stale): bad or future dates, and items older than 14 days."""
+    errors, stale = [], []
     oldest = today - timedelta(days=MAX_AGE_DAYS)
     for loc, item in iter_items(news):
         raw = item.get("date")
@@ -127,11 +133,11 @@ def check_dates(news: dict, today: date) -> list[str]:
         if d > today:
             errors.append(f"news.json {loc}.date: {raw} is in the future (today is {today} in Arizona)")
         elif d < oldest:
-            errors.append(
+            stale.append(
                 f"news.json {loc}.date: {raw} is older than {MAX_AGE_DAYS} days "
                 f"(oldest allowed is {oldest})"
             )
-    return errors
+    return errors, stale
 
 
 def check_updated(news: dict, now: datetime) -> list[str]:
@@ -152,14 +158,15 @@ def check_updated(news: dict, now: datetime) -> list[str]:
     return errors
 
 
-def check_headlines(items, label: str) -> list[str]:
+def check_lengths(items, label: str) -> list[str]:
     errors = []
     for loc, item in items:
-        headline = item.get("headline")
-        if isinstance(headline, str) and len(headline) > MAX_HEADLINE:
-            errors.append(
-                f"{label} {loc}.headline: {len(headline)} characters, must be under 90"
-            )
+        for field, limit in (("headline", MAX_HEADLINE), ("summary", MAX_SUMMARY)):
+            text = item.get(field)
+            if isinstance(text, str) and len(text) > limit:
+                errors.append(
+                    f"{label} {loc}.{field}: {len(text)} characters, must be {limit} or fewer"
+                )
     return errors
 
 
@@ -219,8 +226,11 @@ def check_routine_pr(base_ref: str, cwd: Path = ROOT) -> list[str]:
     return errors
 
 
-def validate(news: object, pinned: object, now: datetime | None = None) -> list[str]:
-    """Run every content check and return a list of error messages."""
+def run_checks(
+    news: object, pinned: object, now: datetime | None = None
+) -> tuple[list[str], list[str]]:
+    """Run every content check. Return (errors, stale), where stale lists items
+    older than 14 days; the caller decides whether those are errors or warnings."""
     now = now or datetime.now(TZ)
     today = now.astimezone(TZ).date()
     schema = load_schema()
@@ -230,24 +240,34 @@ def validate(news: object, pinned: object, now: datetime | None = None) -> list[
 
     errors = check_schema(news, schema, "news.json")
     errors += check_schema(pinned, pinned_schema, "pinned.json")
+    stale: list[str] = []
 
     if isinstance(news, dict):
         items = list(iter_items(news))
         errors += check_urls(items, "news.json")
-        errors += check_dates(news, today)
+        date_errors, stale = check_dates(news, today)
+        errors += date_errors
         errors += check_updated(news, now)
-        errors += check_headlines(items, "news.json")
+        errors += check_lengths(items, "news.json")
         errors += check_duplicate_urls(news)
     if isinstance(pinned, list):
         pinned_items = [(f"[{i}]", p) for i, p in enumerate(pinned) if isinstance(p, dict)]
         errors += check_urls(pinned_items, "pinned.json")
-        errors += check_headlines(pinned_items, "pinned.json")
+        errors += check_lengths(pinned_items, "pinned.json")
 
     errors += check_em_dashes(news, "news.json")
     errors += check_em_dashes(pinned, "pinned.json")
 
     # The schema and the explicit checks can report the same problem; keep one copy.
-    return list(dict.fromkeys(errors))
+    return list(dict.fromkeys(errors)), stale
+
+
+def validate(
+    news: object, pinned: object, now: datetime | None = None, stale_is_error: bool = True
+) -> list[str]:
+    """Return error messages. With stale_is_error=False, items older than 14 days pass."""
+    errors, stale = run_checks(news, pinned, now)
+    return errors + stale if stale_is_error else errors
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -257,18 +277,33 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--routine-pr",
         metavar="BASE_REF",
-        help="also fail if any file other than data/news.json differs from BASE_REF",
+        help=(
+            "Routine mode: fail if any file other than data/news.json differs from "
+            "BASE_REF, and treat items older than 14 days as errors"
+        ),
     )
     args = parser.parse_args(argv)
 
     news, errors = load_json(args.news)
     pinned, pinned_errors = load_json(args.pinned)
     errors += pinned_errors
+    stale: list[str] = []
     if not errors:
-        errors = validate(news, pinned)
+        errors, stale = run_checks(news, pinned)
     if args.routine_pr:
+        errors += stale
+        stale = []
         errors += check_routine_pr(args.routine_pr)
 
+    if stale:
+        print(
+            f"Warning: {len(stale)} stale item(s). This is an error only with --routine-pr:",
+            file=sys.stderr,
+        )
+        for w in stale:
+            print(f"  - {w}", file=sys.stderr)
+        if not errors:
+            print(f"::warning title=Stale news::{len(stale)} item(s) older than {MAX_AGE_DAYS} days")
     if errors:
         print(f"Validation failed with {len(errors)} problem(s):", file=sys.stderr)
         for e in errors:
