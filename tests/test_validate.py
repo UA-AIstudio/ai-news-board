@@ -28,7 +28,8 @@ def test_good_fixture_passes(good_news, good_pinned):
         ("bad_http.json", "not on the allowlist"),
         ("bad_old_date.json", "older than 14 days"),
         ("bad_future_date.json", "in the future"),
-        ("bad_long_headline.json", "must be under 90"),
+        ("bad_long_headline.json", "headline: 71 characters, must be 70 or fewer"),
+        ("bad_long_summary.json", "summary: 161 characters, must be 160 or fewer"),
         ("bad_em_dash.json", "em dash"),
         ("bad_duplicate_url.json", "duplicate of"),
         ("bad_too_few_models.json", "columns.models"),
@@ -47,6 +48,38 @@ def test_date_boundaries(good_news, good_pinned):
     good_news["columns"]["models"][0]["date"] = "2026-06-01"  # exactly 14 days old
     good_news["columns"]["models"][1]["date"] = "2026-06-15"  # today
     assert errors_for(good_news, good_pinned) == []
+
+
+def test_length_limits_are_inclusive(good_news, good_pinned):
+    good_news["columns"]["models"][0]["headline"] = "h" * 70
+    good_news["columns"]["models"][0]["summary"] = "s" * 159 + "."
+    good_pinned[0]["headline"] = "p" * 70
+    assert errors_for(good_news, good_pinned) == []
+
+
+def test_pinned_length_limits(good_news, good_pinned):
+    good_pinned[1]["summary"] = "s" * 161
+    errors = errors_for(good_news, good_pinned)
+    assert any(e.startswith("pinned.json") and "must be 160 or fewer" in e for e in errors)
+
+
+def test_stale_items_are_errors_by_default(good_pinned):
+    errors = errors_for(load_fixture("bad_old_date.json"), good_pinned)
+    assert any("older than 14 days" in e for e in errors)
+
+
+def test_stale_items_pass_when_not_strict(good_pinned):
+    news = load_fixture("bad_old_date.json")
+    assert validate.validate(news, good_pinned, now=FIXTURE_NOW, stale_is_error=False) == []
+    errors, stale = validate.run_checks(news, good_pinned, now=FIXTURE_NOW)
+    assert errors == []
+    assert len(stale) == 1 and "older than 14 days" in stale[0]
+
+
+def test_future_dates_fail_even_when_not_strict(good_pinned):
+    news = load_fixture("bad_future_date.json")
+    errors = validate.validate(news, good_pinned, now=FIXTURE_NOW, stale_is_error=False)
+    assert any("in the future" in e for e in errors)
 
 
 def test_today_uses_phoenix_time(good_news, good_pinned):
@@ -115,6 +148,33 @@ def test_cli_reports_errors_and_exits_1(tmp_path, good_pinned):
     )
     assert result.returncode == 1
     assert "not on the allowlist" in result.stderr
+
+
+def _run_cli(*args):
+    return subprocess.run(
+        ["python", str(ROOT / "scripts" / "validate.py"), *args],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+
+
+def test_cli_stale_items_warn_and_pass(tmp_path, good_pinned):
+    # good.json is dated June 2026, so every item is stale against the real clock.
+    pinned = tmp_path / "pinned.json"
+    pinned.write_text(json.dumps(good_pinned))
+    result = _run_cli("--news", str(FIXTURES / "good.json"), "--pinned", str(pinned))
+    assert result.returncode == 0, result.stderr
+    assert "Warning: 7 stale item(s)" in result.stderr
+    assert "Validation passed." in result.stdout
+
+
+def test_cli_stale_items_fail_with_routine_pr(tmp_path, good_pinned):
+    pinned = tmp_path / "pinned.json"
+    pinned.write_text(json.dumps(good_pinned))
+    # Comparing HEAD with itself changes no files, so only the freshness check can fail.
+    result = _run_cli("--news", str(FIXTURES / "good.json"), "--pinned", str(pinned), "--routine-pr", "HEAD")
+    assert result.returncode == 1
+    assert "older than 14 days" in result.stderr
+    assert "Warning" not in result.stderr
 
 
 def test_cli_invalid_json(tmp_path):
