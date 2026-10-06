@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-04T03:55:00-07:00",
+  "updated": "2026-10-06T05:50:00-07:00",
   "columns": {
     "models": [
       {
@@ -52,13 +52,6 @@
         "source": "Hugging Face",
         "url": "https://huggingface.co/blog/evaleval-aisi",
         "date": "2026-09-22"
-      },
-      {
-        "headline": "Hugging Face releases tokenizers v1",
-        "summary": "Version 1 of the tokenizers library encodes text 3 to 30 times faster than v0.23 while producing identical tokens.",
-        "source": "Hugging Face",
-        "url": "https://huggingface.co/blog/tokenizers-v1",
-        "date": "2026-09-21"
       }
     ],
     "campus": []
