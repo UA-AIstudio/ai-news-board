@@ -27,9 +27,9 @@ lib.arizona.edu, news.arizona.edu
   papers.
 - `campus` (0 to 5 items): U of A GenAI updates (responsibleai.arizona.edu),
   University of Arizona Libraries AI news, and AI+ Studio news. Leave it empty
-  if nothing qualifies; the board then shows "No new campus AI news this
-  week". Studio hours and the AI desk live in `data/pinned.json` and show in
-  the Studio panel; do not copy them into `news.json`.
+  if nothing qualifies; the board then leaves the On campus card out. Studio
+  hours and the AI desk live in `data/pinned.json` and show in the Studio
+  panel; do not copy them into `news.json`.
 
 Prefer 4 items per column. Newest first within each column.
 
