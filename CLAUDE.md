@@ -18,19 +18,64 @@ Review flow: check the dev link, then merge the `claude/dev` pull request.
   fonts, or third-party scripts.
 - Public information only. No personal data of any kind.
 - No secrets. No API keys anywhere.
-- No icons, emojis, or decorative graphics.
-- Colors: Arizona Blue #0C234B and white, with Arizona Red #AB0520 as the only
-  accent (used for "now" signals such as the spotlight progress bar and NEW
-  tags). No other colors.
+- No icons, emojis, or decorative graphics. The one image is the AI+ Studio
+  poster artwork in the Studio panel (see Images).
+- Colors: Arizona Blue #0C234B, white, light gray #F5F7FB (the brief
+  background) and border #DDE3EE, with Arizona Red #AB0520 as the only
+  accent: the top bar, the kicker, NEW tags, metric bars, the spotlight
+  progress bar and the "checked" dot. Navy and white may be used with
+  opacity. No other colors. Text meets WCAG AA (4.5:1);
+  `tests/test_repo_rules.py` checks the palette and the contrast.
+- This is a TV: no search, navigation tabs, buttons, pagination, or anything
+  that looks clickable.
 - No Claude attribution in commits, pull requests, or the page.
 - Python 3.12 in workflows.
+
+## Layout (1920x1080, scales to 4K)
+
+All sizes in `static/style.css` are multiples of `--px` (1px at 1920x1080,
+2px at 3840x2160), so the layout is identical at any 16:9 size.
+
+- Top: a 6px Arizona Red bar. Header on white: "AI+ Studio" label, a thin
+  divider, "Latest AI News" (weight 800). Right: a bordered card "Checked at
+  <time> Arizona time" with the date and a red dot, then the live clock.
+- Left, 64 percent, on light gray: red "YOUR DAILY BRIEF" kicker; the
+  spotlight card (category and source, headline, summary, metrics, NEW tag,
+  QR on the right); then three white cards: New models, Tools and research,
+  On campus. Compact items: NEW tag, source and category, date, headline, a
+  summary clamped to two lines (one line in a column with five items).
+- On campus shows campus news only. When it is empty it says "No new campus
+  AI news this week". Pinned items never appear in the columns or ticker.
+- Right, 36 percent, navy Studio panel: the poster in the top 55 percent,
+  then "What you can do here" with four text tiles, the open/closed badge,
+  room, hours (built from `pinned.json` `hours`), email, the other pinned
+  items as short notes, and a QR to the Studio page.
+- Bottom: the headline ticker on navy across the full width, then a thin
+  footer.
+- Every change is checked with `tests/fixtures/stress_max.json` (5 items per
+  column at maximum length) at 1920x1080 and 3840x2160, live and preview:
+  no clipping, overlap, or scrollbars.
+
+## Images
+
+- Only people add or change images, under `static/img/`. The Routine never
+  adds, changes, or removes images; CI fails any `claude/` branch pull
+  request that touches `static/img/`, and `validate.py --routine-pr` reports
+  it too.
+- The poster original stays in the repo as `static/img/studio-poster.png`.
+  `build.py` crops it to `POSTER_FOCUS` (the students and the robot, without
+  the poster's own text) and writes `img/studio-poster.webp` under 400 KB
+  with Pillow. When the poster is replaced, check `POSTER_FOCUS`.
+- The panel shows it with `object-fit: cover` (never stretched),
+  `saturate(0.8)`, and a navy gradient from the bottom. No glow effects.
 
 ## Motion rules
 
 - Animate only `opacity` and `transform`. Use `will-change` sparingly.
 - Pause all animation and timers while the page is hidden (`document.hidden`).
 - Respect `prefers-reduced-motion`: no carousel motion, ticker, highlight,
-  background drift, or pulse; show static content.
+  background drift (the faint light behind the Studio panel text), or pulse;
+  show static content.
 - All content must be readable without JavaScript.
 - Text never moves while it is being read, except the ticker. Spotlight slides
   move only during their short transition, and the burn-in shift is at most
@@ -63,15 +108,16 @@ Review flow: check the dev link, then merge the `claude/dev` pull request.
 
 ```
 data/news.json              content written by the Routine
-data/pinned.json            hand-edited campus items, Studio hours and closures
+data/pinned.json            hand-edited Studio hours, closures and notes (Studio panel)
 schema/news.schema.json     JSON Schema for news.json (and pinned items)
 scripts/validate.py         all checks; exits 1 on any failure
 scripts/build.py            data + template -> site/index.html
 templates/index.html.j2     page template (Jinja2, autoescape on)
 static/style.css            page styles
 static/board.js             page behavior, inlined into the page by build.py
+static/img/                 images, added by people only (studio-poster.png)
 routine/PROMPT.md           instructions for the daily Routine
-tests/                      pytest tests and fixtures
+tests/                      pytest tests and fixtures (stress_max.json for layout)
 .github/workflows/ci.yml    pull request checks
 .github/workflows/deploy.yml  build and deploy on push to main
 ```
