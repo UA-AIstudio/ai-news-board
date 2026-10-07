@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import shutil
 import sys
@@ -20,6 +21,7 @@ from zoneinfo import ZoneInfo
 import qrcode
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from markupsafe import Markup
+from PIL import Image
 from qrcode.constants import ERROR_CORRECT_M
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,7 +31,6 @@ STATIC_DIR = ROOT / "static"
 SITE_DIR = ROOT / "site"
 
 TZ = ZoneInfo("America/Phoenix")
-CAMPUS_MAX = 5
 
 COLUMNS = (
     ("models", "New models"),
@@ -37,16 +38,79 @@ COLUMNS = (
     ("campus", "On campus"),
 )
 
+# Shown in a column that has no items (only "campus" may be empty).
+EMPTY_COLUMN = "No new campus AI news this week"
+
+# The right-hand Studio panel. Public information about the Studio itself.
+STUDIO = {
+    "url": "https://lib.arizona.edu/study/ai-studio",
+    "room": "Room 212, Weaver Science-Engineering Library",
+    "email": "lbry-aistudio@arizona.edu",
+    "offers": (
+        "Use local LLMs",
+        "Talk to an AI specialist",
+        "Attend workshops and events",
+        "Plan an AI challenge",
+    ),
+}
+
+# The poster artwork for the Studio panel. People add and replace images under
+# static/img/; the build converts the poster to WebP for the page.
+POSTER_SOURCE = STATIC_DIR / "img" / "studio-poster.png"
+POSTER_PATH = "img/studio-poster.webp"
+POSTER_MAX_BYTES = 400_000
+# The part of the poster the panel shows, as fractions of its width and height
+# (left, top, right, bottom): the students and the robot. This trims the
+# poster's own title, tiles and contact strip, which the panel already shows
+# as text. Check it whenever the poster is replaced.
+POSTER_FOCUS = (0.465, 0.03, 0.885, 0.71)
+
+DAY_KEYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
 # Columns whose items rotate through the spotlight carousel.
 SPOTLIGHT_COLUMNS = ("models", "tools")
 
 
 def format_updated(raw: str) -> str:
     """'2026-10-04T08:15:00-07:00' -> 'Sunday, October 4, 8:15 am'."""
+    checked = format_checked(raw)
+    return f"{checked['date']}, {checked['time']}"
+
+
+def format_checked(raw: str) -> dict:
+    """'2026-10-04T08:15:00-07:00' -> {'time': '8:15 am', 'date': 'Sunday, October 4'}."""
     stamp = datetime.fromisoformat(raw).astimezone(TZ)
     hour = stamp.hour % 12 or 12
     ampm = "am" if stamp.hour < 12 else "pm"
-    return f"{stamp:%A}, {stamp:%B} {stamp.day}, {hour}:{stamp:%M} {ampm}"
+    return {"time": f"{hour}:{stamp:%M} {ampm}", "date": f"{stamp:%A}, {stamp:%B} {stamp.day}"}
+
+
+def format_clock(hhmm: str) -> str:
+    """'18:00' -> '6pm', '11:30' -> '11:30am', '12:00' -> '12pm'."""
+    h, m = (int(x) for x in hhmm.split(":"))
+    suffix = "am" if h < 12 else "pm"
+    return f"{h % 12 or 12}{f':{m:02d}' if m else ''}{suffix}"
+
+
+def format_hours(hours: dict) -> str:
+    """Weekly hours as one line: 'Mon to Thu 11am to 6pm, Fri 11am to 5pm'.
+
+    Consecutive days with the same hours are grouped; closed days are left out.
+    """
+    groups: list[list] = []  # [first day, last day, [open, close]]
+    previous = None
+    for key in DAY_KEYS:
+        span = hours.get(key)
+        if span and span == previous:
+            groups[-1][1] = key
+        elif span:
+            groups.append([key, key, span])
+        previous = span
+    parts = []
+    for first, last, (opens, closes) in groups:
+        days = first.title() if first == last else f"{first.title()} to {last.title()}"
+        parts.append(f"{days} {format_clock(opens)} to {format_clock(closes)}")
+    return ", ".join(parts)
 
 
 def format_item_date(raw: str) -> str:
@@ -159,7 +223,6 @@ def prepare_item(item: dict) -> dict:
         "iso_date": item.get("date", ""),
         "date": format_item_date(item["date"]) if item.get("date") else "",
         "domain": domain(item["url"]),
-        "has_hours": bool(item.get("hours")),
     }
 
 
@@ -178,6 +241,41 @@ def spotlight_items(news: dict) -> list[dict]:
     return sorted(items, key=lambda i: i["iso_date"], reverse=True)
 
 
+def poster_info(source: Path = POSTER_SOURCE) -> dict | None:
+    """Size of the cropped poster, for the img tag, or None if there is no poster."""
+    if not source.is_file():
+        return None
+    with Image.open(source) as image:
+        left, top, right, bottom = poster_box(image.size)
+    return {"src": POSTER_PATH, "width": right - left, "height": bottom - top}
+
+
+def poster_box(size: tuple[int, int]) -> tuple[int, int, int, int]:
+    width, height = size
+    left, top, right, bottom = POSTER_FOCUS
+    return (round(left * width), round(top * height), round(right * width), round(bottom * height))
+
+
+def write_poster(source: Path, dest: Path, max_bytes: int = POSTER_MAX_BYTES) -> int:
+    """Crop the poster to POSTER_FOCUS and save it as WebP under max_bytes.
+
+    Lowers the quality first, then the size, until it fits. Returns the bytes written.
+    """
+    with Image.open(source) as image:
+        image = image.convert("RGB").crop(poster_box(image.size))
+    while True:
+        for quality in (82, 74, 66, 58, 50):
+            buffer = io.BytesIO()
+            image.save(buffer, "WEBP", quality=quality, method=6)
+            if buffer.tell() <= max_bytes:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(buffer.getvalue())
+                return buffer.tell()
+        if image.width < 200:
+            raise ValueError(f"{source} cannot be made smaller than {max_bytes} bytes as WebP")
+        image = image.resize((image.width * 3 // 4, image.height * 3 // 4), Image.LANCZOS)
+
+
 def studio_hours(pinned: list) -> dict | None:
     """Regular hours and closure dates for the pinned item that has hours."""
     for item in pinned:
@@ -187,19 +285,29 @@ def studio_hours(pinned: list) -> dict | None:
 
 
 def build_context(news: dict, pinned: list) -> dict:
-    columns = []
-    for key, title in COLUMNS:
-        items = list(news["columns"][key])
-        if key == "campus":
-            items = (items + list(pinned))[:CAMPUS_MAX]
-        columns.append({"key": key, "title": title, "items": [prepare_item(i) for i in items]})
+    """Page data. The columns hold news only; pinned items (Studio hours, the
+    AI desk) go to the Studio panel and are not repeated in the ticker."""
+    columns = [
+        {
+            "key": key,
+            "title": title,
+            "items": [prepare_item(i) for i in news["columns"][key]],
+            "empty": EMPTY_COLUMN,
+        }
+        for key, title in COLUMNS
+    ]
     ticker = [item["headline"] for column in columns for item in column["items"]]
+    hours = studio_hours(pinned)
     return {
-        "updated": format_updated(news["updated"]),
+        "checked": format_checked(news["updated"]),
         "columns": columns,
         "spotlight": spotlight_items(news),
         "ticker": ticker,
-        "hours": studio_hours(pinned),
+        "hours": hours,
+        "hours_text": format_hours(hours["hours"]) if hours else "",
+        "notes": [prepare_item(p) for p in pinned if not p.get("hours")],
+        "studio": {**STUDIO, "qr": qr_svg(STUDIO["url"], domain(STUDIO["url"]))},
+        "poster": poster_info(),
     }
 
 
@@ -244,6 +352,8 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True)
     (out / "index.html").write_text(html, encoding="utf-8")
     shutil.copy2(STATIC_DIR / "style.css", out / "style.css")
+    if POSTER_SOURCE.is_file():
+        write_poster(POSTER_SOURCE, out / POSTER_PATH)
     print(f"Built {out / 'index.html'}{' (preview)' if args.preview else ''}")
     return 0
 
