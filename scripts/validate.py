@@ -59,6 +59,9 @@ ALLOWED_DOMAINS = (
 # The only file a Routine pull request may change.
 ROUTINE_ALLOWED_FILES = {"data/news.json"}
 
+# Only people add or change images. A Routine pull request must never touch these.
+HUMAN_ONLY_PREFIXES = ("static/img/",)
+
 
 def load_json(path: Path) -> tuple[object | None, list[str]]:
     try:
@@ -271,11 +274,12 @@ def check_routine_pr(base_ref: str, cwd: Path = ROOT) -> list[str]:
         files = changed_files(base_ref, cwd)
     except (RuntimeError, OSError) as exc:
         return [f"routine PR check: could not list changed files against {base_ref}: {exc}"]
-    errors = [
-        f"routine PR check: {f} was changed, but a Routine pull request may only change data/news.json"
-        for f in files
-        if f not in ROUTINE_ALLOWED_FILES
-    ]
+    errors = []
+    for f in files:
+        if f.startswith(HUMAN_ONLY_PREFIXES):
+            errors.append(f"routine PR check: {f} was changed, but only people add or change images in static/img/")
+        elif f not in ROUTINE_ALLOWED_FILES:
+            errors.append(f"routine PR check: {f} was changed, but a Routine pull request may only change data/news.json")
     return errors
 
 
