@@ -133,13 +133,49 @@ def test_write_poster_stays_under_the_limit(tmp_path):
     assert small <= 8_000
 
 
-def test_stress_fixture_renders_dense_columns(good_pinned):
+def test_stress_fixture_renders_three_pages_per_column(good_pinned):
     news = load_fixture("stress_max.json")
     for column in news["columns"].values():
         assert len(column) == 5
         assert all(len(i["headline"]) == 70 and len(i["summary"]) == 160 for i in column)
     html = build.render(news, good_pinned)
-    assert html.count('class="column dense"') == 3
+    assert html.count('<span class="page-count">1 of 3</span>') == 3
+    assert html.count('class="items page') == 9
+
+
+@pytest.mark.parametrize("count, sizes", [(0, []), (1, [1]), (2, [2]), (3, [2, 1]), (4, [2, 2]), (5, [2, 2, 1])])
+def test_paginate_splits_items_into_pages_of_two(count, sizes):
+    items = list(range(count))
+    pages = build.paginate(items)
+    assert [len(page) for page in pages] == sizes
+    assert [i for page in pages for i in page] == items
+
+
+def column_html(html: str, key: str) -> str:
+    start = html.index(f'aria-labelledby="col-{key}"')
+    return html[start:html.index("</section>", start)]
+
+
+@pytest.mark.parametrize("count, pages", [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3)])
+def test_page_counter_only_with_more_than_one_page(good_news, good_pinned, count, pages):
+    item = good_news["columns"]["models"][0]
+    good_news["columns"]["models"] = [dict(item, url=f"https://www.anthropic.com/news/p{i}") for i in range(count)]
+    column = column_html(build.render(good_news, good_pinned), "models")
+    assert column.count('class="items page') == pages
+    if pages == 1:
+        assert "page-foot" not in column and "page-count" not in column
+    else:
+        assert f'<span class="page-count">1 of {pages}</span>' in column
+        assert column.count('<li class="dot') == pages
+
+
+def test_only_the_first_page_is_active_without_javascript(good_news, good_pinned):
+    item = good_news["columns"]["models"][0]
+    good_news["columns"]["models"] = [dict(item, url=f"https://www.anthropic.com/news/p{i}") for i in range(5)]
+    column = column_html(build.render(good_news, good_pinned), "models")
+    assert column.count('class="items page is-active"') == 1
+    assert column.count('class="items page" aria-hidden="true"') == 2
+    assert column.index('class="items page is-active"') < column.index('class="items page" aria-hidden')
 
 
 def test_html_is_escaped(good_news, good_pinned):
