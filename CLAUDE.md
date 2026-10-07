@@ -42,8 +42,14 @@ All sizes in `static/style.css` are multiples of `--px` (1px at 1920x1080,
 - Left, 64 percent, on light gray: red "YOUR DAILY BRIEF" kicker; the
   spotlight card (category and source, headline, summary, metrics, NEW tag,
   QR on the right); then three white cards: New models, Tools and research,
-  On campus. Compact items: NEW tag, source and category, date, headline, a
-  summary clamped to two lines (one line in a column with five items).
+  On campus. Each card shows 2 items at a time: NEW tag, source and category,
+  date, the full headline and the full summary (never clamped or cut off).
+- Column paging: items are split into pages of 2 (`build.py` `paginate`).
+  A card with more pages turns every 10 seconds with a 600ms crossfade and
+  loops; New models starts at 0s, Tools and research at 3s, On campus at 6s.
+  A page never turns while a spotlight slide is moving. The card header
+  shows a "1 of 3" counter and dots, omitted for a single page. All pages
+  share one grid cell, so a card is as tall as its tallest page.
 - On campus shows campus news only. When it is empty it says "No new campus
   AI news this week". Pinned items never appear in the columns or ticker.
 - Right, 36 percent, navy Studio panel: the poster in the top 55 percent,
@@ -54,7 +60,7 @@ All sizes in `static/style.css` are multiples of `--px` (1px at 1920x1080,
   footer.
 - Every change is checked with `tests/fixtures/stress_max.json` (5 items per
   column at maximum length) at 1920x1080 and 3840x2160, live and preview:
-  no clipping, overlap, or scrollbars.
+  every page fits in full, with no clipping, overlap, or scrollbars.
 
 ## Images
 
@@ -73,13 +79,17 @@ All sizes in `static/style.css` are multiples of `--px` (1px at 1920x1080,
 
 - Animate only `opacity` and `transform`. Use `will-change` sparingly.
 - Pause all animation and timers while the page is hidden (`document.hidden`).
-- Respect `prefers-reduced-motion`: no carousel motion, ticker, highlight,
+- Respect `prefers-reduced-motion`: no carousel motion, ticker, page crossfade,
   background drift (the faint light behind the Studio panel text), or pulse;
   show static content.
-- All content must be readable without JavaScript.
+- All content must be readable without JavaScript: each card shows its first
+  page, and every headline is in the ticker.
+- With reduced motion, column pages switch without animation every 15 seconds.
+- The 10-minute reload happens only at a column page change (or a slide
+  change when nothing pages), never in the middle of a transition.
 - Text never moves while it is being read, except the ticker. Spotlight slides
-  move only during their short transition, and the burn-in shift is at most
-  2px every 10 minutes.
+  and column pages move only during their short transition, and the burn-in
+  shift is at most 2px every 10 minutes.
 
 ## Workflow rules
 

@@ -82,9 +82,14 @@ The layout is 1920x1080 and scales exactly to 3840x2160.
   Percentages fill against 100; other values fill against the largest value
   with the same unit on that item, and a value with nothing to compare
   against shows as text only.
-- Below the spotlight, three white cards list the items compactly: source,
-  category and date, headline, and a short summary. Each card softly
-  highlights one item at a time.
+- Below the spotlight, three white cards show two items at a time, each with
+  source, category and date, the full headline, and the full summary. A
+  card with more than two items turns to its next page every 10 seconds
+  with a 600ms crossfade and loops back to the first. The cards start 3
+  seconds apart (New models, then Tools and research, then On campus), and a
+  page never turns while a spotlight slide is moving. A "1 of 3" counter and
+  dots in the card header show the page; a card with one page has none.
+  Every card is as tall as its tallest page, so it never changes size.
 - Right (36 percent): the Studio panel. The poster artwork (cropped, slightly
   desaturated, fading into navy), "What you can do here" with four tiles,
   the open/closed badge, room, hours, email, the AI desk note, and a QR code
@@ -95,10 +100,12 @@ The layout is 1920x1080 and scales exactly to 3840x2160.
   whole layout shifts by up to 2px every 10 minutes to protect the TV from
   burn-in.
 - Every 10 minutes the page checks that the site is reachable and reloads
-  between spotlight slides. If the network is down, it keeps the current page.
+  at the next column page change (or the next spotlight slide when no card
+  has more than one page). If the network is down, it keeps the current page.
 - All motion pauses while the page is hidden and turns off for viewers who
-  ask their system for reduced motion. Without JavaScript, every item is
-  still shown.
+  ask their system for reduced motion; then pages switch without animation
+  every 15 seconds. Without JavaScript, each card shows its first page and
+  every headline is still in the ticker.
 
 ## Local setup
 
@@ -168,7 +175,8 @@ from `claude/` branches, so news updates must be fresh.
 3. Run `python scripts/build.py` and check `site/index.html` at 1920x1080 and
    3840x2160, live and with `--preview`. Also build with
    `tests/fixtures/stress_max.json` (5 items per column at maximum length):
-   nothing may be cut off, overlap, or scroll.
+   every page of every card must fit in full, and nothing may be cut off,
+   overlap, or scroll.
 4. Use only the palette in CLAUDE.md; `python -m pytest` checks the colors
    and their contrast.
 5. Open a pull request. Merge after review.

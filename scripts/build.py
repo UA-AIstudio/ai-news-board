@@ -38,6 +38,9 @@ COLUMNS = (
     ("campus", "On campus"),
 )
 
+# Each column card shows this many items at a time and rotates through the rest.
+PAGE_SIZE = 2
+
 # Shown in a column that has no items (only "campus" may be empty).
 EMPTY_COLUMN = "No new campus AI news this week"
 
@@ -284,6 +287,11 @@ def studio_hours(pinned: list) -> dict | None:
     return None
 
 
+def paginate(items: list, size: int = PAGE_SIZE) -> list[list]:
+    """Split items into pages of `size`, in order. No items means no pages."""
+    return [items[i:i + size] for i in range(0, len(items), size)]
+
+
 def build_context(news: dict, pinned: list) -> dict:
     """Page data. The columns hold news only; pinned items (Studio hours, the
     AI desk) go to the Studio panel and are not repeated in the ticker."""
@@ -296,6 +304,8 @@ def build_context(news: dict, pinned: list) -> dict:
         }
         for key, title in COLUMNS
     ]
+    for column in columns:
+        column["pages"] = paginate(column["items"])
     ticker = [item["headline"] for column in columns for item in column["items"]]
     hours = studio_hours(pinned)
     return {

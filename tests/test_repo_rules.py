@@ -88,3 +88,20 @@ def test_images_are_only_under_static_img():
         if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
     ]
     assert images and all(i.startswith("static/img/") for i in images), images
+
+
+def css_rules(selector_pattern: str) -> list[str]:
+    """Bodies of the style.css rules whose selector matches the pattern."""
+    css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    return [body for selector, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css) if re.search(selector_pattern, selector)]
+
+
+def test_column_summaries_and_headlines_show_in_full():
+    """Two items per page leave room for the full text: no clamp or ellipsis."""
+    rules = css_rules(r"\.(summary|headline)\b")
+    assert rules, "no .summary or .headline rules found"
+    for body in rules:
+        assert "line-clamp" not in body and "ellipsis" not in body and "nowrap" not in body
+    css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
+    assert "line-clamp" not in css

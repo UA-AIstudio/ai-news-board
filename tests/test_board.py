@@ -160,6 +160,30 @@ def test_new_tag_boundary(item_date, now, expected):
     assert run_board("board.isNew(v.date, Date.parse(v.now))", date=item_date, now=now) is expected
 
 
+@needs_node
+def test_page_schedule_is_staggered():
+    """Columns turn every 10 seconds, starting 3 seconds apart."""
+    turns = run_board(
+        "[0, 1, 2].map(function (i) { var s = []; for (var t = 0; t <= 40; t++) if (board.pageDue(t, i, false)) s.push(t); return s; })"
+    )
+    assert turns == [[10, 20, 30, 40], [13, 23, 33], [16, 26, 36]]
+
+
+@needs_node
+def test_page_schedule_with_reduced_motion():
+    turns = run_board(
+        "[0, 1, 2].map(function (i) { var s = []; for (var t = 0; t <= 45; t++) if (board.pageDue(t, i, true)) s.push(t); return s; })"
+    )
+    assert turns == [[15, 30, 45], [18, 33], [21, 36]]
+
+
+def test_highlight_is_gone():
+    text = BOARD_JS.read_text(encoding="utf-8")
+    css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
+    assert "is-lit" not in text and "is-lit" not in css
+    assert "highlightNext" not in text
+
+
 def test_board_js_is_safe_to_inline():
     text = BOARD_JS.read_text(encoding="utf-8")
     assert "</script" not in text.lower()
