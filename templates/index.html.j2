@@ -93,7 +93,6 @@
               </div>
               {% endif %}
             </div>
-            {% if column.pages %}
             {# All pages share one grid cell, so the card fits the tallest page.
                Without JavaScript only the first page shows. #}
             <div class="pages">
@@ -109,9 +108,6 @@
               </ol>
               {% endfor %}
             </div>
-            {% else %}
-            <p class="empty">{{ column.empty }}</p>
-            {% endif %}
           </section>
           {% endfor %}
         </div>

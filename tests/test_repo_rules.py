@@ -105,3 +105,12 @@ def test_column_summaries_and_headlines_show_in_full():
         assert "line-clamp" not in body and "ellipsis" not in body and "nowrap" not in body
     css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
     assert "line-clamp" not in css
+
+
+def test_card_text_scales_with_fit():
+    """Card text sizes use --fpx so board.js can grow them to fill the card."""
+    rules = css_rules(r"^\s*\.(summary|headline|meta|item)\s*$")
+    assert len(rules) == 4
+    for body in rules:
+        sizes = re.findall(r"(?:font-size|padding|margin-top):\s*([^;]+);", body)
+        assert sizes and all("--fpx" in v or v.strip() == "0" for v in sizes), body
