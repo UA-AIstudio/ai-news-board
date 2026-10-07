@@ -232,3 +232,30 @@ def test_routine_pr_other_file_fails(repo):
 def test_routine_pr_bad_base_ref(repo):
     errors = validate.check_routine_pr("no-such-branch", cwd=repo)
     assert errors and "could not list changed files" in errors[0]
+
+
+def test_routine_pr_image_fails_with_its_own_message(repo):
+    (repo / "static" / "img").mkdir(parents=True)
+    (repo / "static" / "img" / "studio-poster.png").write_bytes(b"\x89PNG")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "image")
+    errors = validate.check_routine_pr("main", cwd=repo)
+    assert errors == [
+        "routine PR check: static/img/studio-poster.png was changed, "
+        "but only people add or change images in static/img/"
+    ]
+
+
+def test_ci_blocks_image_changes_on_claude_branches():
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    step = ci[ci.index("- name: Check claude/ branch does not touch static/img/"):]
+    step = step[:step.index("\n      - name:", 1)]
+    assert "if: startsWith(github.head_ref, 'claude/')" in step
+    assert "-- static/img/" in step and "exit 1" in step
+    # It runs before the tests, so it is the first failure reported.
+    assert ci.index("does not touch static/img/") < ci.index("- name: Run tests")
+
+
+def test_stress_fixture_passes(good_pinned):
+    """Five items per column at the maximum lengths, used for layout checks."""
+    assert validate.validate(load_fixture("stress_max.json"), good_pinned, now=FIXTURE_NOW) == []

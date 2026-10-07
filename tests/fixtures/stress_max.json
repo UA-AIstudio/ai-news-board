@@ -1,0 +1,170 @@
+{
+  "updated": "2026-06-15T08:00:00-07:00",
+  "columns": {
+    "models": [
+      {
+        "headline": "Wide Model Maker Ships Multimodal Workhorse With Memory, Web and Media",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/stress-models-0",
+        "date": "2026-06-15",
+        "metrics": [
+          {
+            "label": "Score on a very long benchmark",
+            "value": 99.9,
+            "unit": "%"
+          },
+          {
+            "label": "Score on a second long benchmk",
+            "value": 1234567.89,
+            "unit": "tokn"
+          },
+          {
+            "label": "Score on a third, longer bench",
+            "value": 765432.1,
+            "unit": "tokn"
+          }
+        ],
+        "reported_by": "A Very Long Publisher Name For Testing Wrap"
+      },
+      {
+        "headline": "MEGALAB WWW Releases Mammoth Reasoning Model For Mathematics Workloads",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/stress-models-1",
+        "date": "2026-06-14",
+        "metrics": [
+          {
+            "label": "Score on a very long benchmark",
+            "value": 99.9,
+            "unit": "%"
+          },
+          {
+            "label": "Score on a second long benchmk",
+            "value": 1234567.89,
+            "unit": "tokn"
+          },
+          {
+            "label": "Score on a third, longer bench",
+            "value": 765432.1,
+            "unit": "tokn"
+          }
+        ],
+        "reported_by": "A Very Long Publisher Name For Testing Wrap"
+      },
+      {
+        "headline": "Major Lab Unveils Wordy Multilingual Model With Million Word Windows W",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/stress-models-2",
+        "date": "2026-06-13",
+        "metrics": [
+          {
+            "label": "Score on a very long benchmark",
+            "value": 99.9,
+            "unit": "%"
+          },
+          {
+            "label": "Score on a second long benchmk",
+            "value": 1234567.89,
+            "unit": "tokn"
+          },
+          {
+            "label": "Score on a third, longer bench",
+            "value": 765432.1,
+            "unit": "tokn"
+          }
+        ],
+        "reported_by": "A Very Long Publisher Name For Testing Wrap"
+      },
+      {
+        "headline": "Frontier Developer Announces Massive Open Weights Model With MoE Tools",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/stress-models-3",
+        "date": "2026-06-12"
+      },
+      {
+        "headline": "Worldwide Model Makers Merge Work On Shared Weights, Metrics and Media",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/stress-models-4",
+        "date": "2026-06-11"
+      }
+    ],
+    "tools": [
+      {
+        "headline": "Wide Model Maker Ships Multimodal Workhorse With Memory, Web and Media",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Hugging Face",
+        "url": "https://www.huggingface.co/news/stress-tools-0",
+        "date": "2026-06-15"
+      },
+      {
+        "headline": "MEGALAB WWW Releases Mammoth Reasoning Model For Mathematics Workloads",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Hugging Face",
+        "url": "https://www.huggingface.co/news/stress-tools-1",
+        "date": "2026-06-14"
+      },
+      {
+        "headline": "Major Lab Unveils Wordy Multilingual Model With Million Word Windows W",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Hugging Face",
+        "url": "https://www.huggingface.co/news/stress-tools-2",
+        "date": "2026-06-13"
+      },
+      {
+        "headline": "Frontier Developer Announces Massive Open Weights Model With MoE Tools",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Hugging Face",
+        "url": "https://www.huggingface.co/news/stress-tools-3",
+        "date": "2026-06-12"
+      },
+      {
+        "headline": "Worldwide Model Makers Merge Work On Shared Weights, Metrics and Media",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "Hugging Face",
+        "url": "https://www.huggingface.co/news/stress-tools-4",
+        "date": "2026-06-11"
+      }
+    ],
+    "campus": [
+      {
+        "headline": "Wide Model Maker Ships Multimodal Workhorse With Memory, Web and Media",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "University of Arizona Libraries",
+        "url": "https://www.news.arizona.edu/news/stress-campus-0",
+        "date": "2026-06-15"
+      },
+      {
+        "headline": "MEGALAB WWW Releases Mammoth Reasoning Model For Mathematics Workloads",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "University of Arizona Libraries",
+        "url": "https://www.news.arizona.edu/news/stress-campus-1",
+        "date": "2026-06-14"
+      },
+      {
+        "headline": "Major Lab Unveils Wordy Multilingual Model With Million Word Windows W",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "University of Arizona Libraries",
+        "url": "https://www.news.arizona.edu/news/stress-campus-2",
+        "date": "2026-06-13"
+      },
+      {
+        "headline": "Frontier Developer Announces Massive Open Weights Model With MoE Tools",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "University of Arizona Libraries",
+        "url": "https://www.news.arizona.edu/news/stress-campus-3",
+        "date": "2026-06-12"
+      },
+      {
+        "headline": "Worldwide Model Makers Merge Work On Shared Weights, Metrics and Media",
+        "summary": "The company says the new release handles much longer documents, writes and reviews code more carefully, and works with images, audio and video in one single mod",
+        "source": "University of Arizona Libraries",
+        "url": "https://www.news.arizona.edu/news/stress-campus-4",
+        "date": "2026-06-11"
+      }
+    ]
+  }
+}

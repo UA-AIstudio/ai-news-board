@@ -1,5 +1,8 @@
 import json
 
+import pytest
+from PIL import Image
+
 import build
 from conftest import ROOT, load_fixture
 
@@ -20,31 +23,123 @@ def test_item_date_and_domain():
     assert build.domain("https://blog.google/x") == "blog.google"
 
 
+def test_format_checked():
+    assert build.format_checked("2026-10-04T08:05:00-07:00") == {"time": "8:05 am", "date": "Sunday, October 4"}
+    assert build.format_checked("2026-10-04T20:00:00+00:00") == {"time": "1:00 pm", "date": "Sunday, October 4"}
+
+
 def test_render_page(good_news, good_pinned):
     html = build.render(good_news, good_pinned)
     assert "<title>Latest AI News</title>" in html
-    assert "Updated Monday, June 15, 8:00 am Arizona time" in html
+    assert "Checked at 8:00 am Arizona time" in html
+    assert '<span class="checked-date">Monday, June 15</span>' in html
+    assert '<p class="brand-label">AI+ Studio</p>' in html
+    assert '<p class="kicker">Your daily brief</p>' in html
     for title in ("New models", "Tools and research", "On campus"):
         assert title in html
     assert "AI+ Studio, University of Arizona Libraries" in html
     assert 'href="https://www.anthropic.com/news/a"' in html
-    assert "Anthropic, Jun 14" in html
+    assert '<span class="source">Anthropic</span> <span class="sep">New models</span> <span class="date">Jun 14</span>' in html
     assert 'cache: "no-store"' in html
     assert "response.ok" in html
 
 
-def test_campus_news_first_then_pinned_max_five(good_news, good_pinned):
+def test_campus_column_has_news_only(good_news, good_pinned):
     campus = good_news["columns"]["campus"][0]
-    good_news["columns"]["campus"] = [dict(campus, headline=f"Campus {i}") for i in range(4)]
+    good_news["columns"]["campus"] = [dict(campus, headline=f"Campus {i}") for i in range(5)]
     ctx = build.build_context(good_news, good_pinned)
     headlines = [i["headline"] for i in ctx["columns"][2]["items"]]
-    assert headlines == ["Campus 0", "Campus 1", "Campus 2", "Campus 3", "Studio hours"]
+    assert headlines == [f"Campus {i}" for i in range(5)]
 
 
-def test_empty_campus_shows_pinned(good_news, good_pinned):
+def test_empty_campus_shows_message_not_pinned(good_news, good_pinned):
     good_news["columns"]["campus"] = []
     ctx = build.build_context(good_news, good_pinned)
-    assert [i["headline"] for i in ctx["columns"][2]["items"]] == ["Studio hours", "Help desk"]
+    assert ctx["columns"][2]["items"] == []
+    html = build.render(good_news, good_pinned)
+    columns = html[html.index('<div class="columns">'):html.index("</main>")]
+    assert '<p class="empty">No new campus AI news this week</p>' in columns
+    assert "Studio hours" not in columns and "Help desk" not in columns
+
+
+def test_pinned_items_go_to_the_studio_panel(good_news, good_pinned):
+    html = build.render(good_news, good_pinned)
+    panel = html[html.index('<aside class="studio"'):html.index("</aside>")]
+    # The hours item becomes the status badge and hours line; other pinned items are notes.
+    assert 'id="studio-status"' in panel
+    assert "Mon to Thu 11am to 6pm, Fri 11am to 5pm" in panel
+    help_desk = good_pinned[1]
+    assert f'<span class="note-title">{help_desk["headline"]}.</span> {help_desk["summary"]}' in panel
+    assert "Studio hours" not in panel
+
+
+@pytest.mark.parametrize(
+    "hours, text",
+    [
+        ({"mon": ["11:00", "18:00"], "tue": ["11:00", "18:00"], "wed": ["11:00", "18:00"],
+          "thu": ["11:00", "18:00"], "fri": ["11:00", "17:00"], "sat": None, "sun": None},
+         "Mon to Thu 11am to 6pm, Fri 11am to 5pm"),
+        ({"mon": ["09:30", "12:00"], "tue": None, "wed": ["09:30", "12:00"], "thu": None,
+          "fri": None, "sat": None, "sun": ["00:00", "23:59"]},
+         "Mon 9:30am to 12pm, Wed 9:30am to 12pm, Sun 12am to 11:59pm"),
+        ({k: None for k in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")}, ""),
+    ],
+)
+def test_format_hours(hours, text):
+    assert build.format_hours(hours) == text
+
+
+def test_studio_panel(good_news, good_pinned):
+    html = build.render(good_news, good_pinned)
+    panel = html[html.index('<aside class="studio"'):html.index("</aside>")]
+    assert '<h2 id="studio-title">What you can do here</h2>' in panel
+    for offer in ("Use local LLMs", "Talk to an AI specialist", "Attend workshops and events", "Plan an AI challenge"):
+        assert f"<li>{offer}</li>" in panel
+    assert "Room 212, Weaver Science-Engineering Library" in panel
+    assert "lbry-aistudio@arizona.edu" in panel
+    assert "<figcaption>Scan to visit the Studio</figcaption>" in panel
+    assert str(build.qr_svg("https://lib.arizona.edu/study/ai-studio", "lib.arizona.edu")) in panel
+    # Nothing in the panel looks clickable.
+    assert "<a " not in panel and "<button" not in panel
+
+
+def test_poster_is_cropped_not_stretched(good_news, good_pinned):
+    html = build.render(good_news, good_pinned)
+    poster = build.poster_info()
+    assert poster is not None
+    assert f'<img src="img/studio-poster.webp" width="{poster["width"]}" height="{poster["height"]}"' in html
+    css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
+    rule = css[css.index(".studio-art img {"):]
+    rule = rule[:rule.index("}")]
+    assert "object-fit: cover" in rule and "saturate(0.8)" in rule
+
+
+def test_no_poster_means_no_image(good_news, good_pinned, monkeypatch, tmp_path):
+    monkeypatch.setattr(build, "POSTER_SOURCE", tmp_path / "missing.png")
+    monkeypatch.setattr(build, "poster_info", lambda: None)
+    html = build.render(good_news, good_pinned)
+    assert "<img" not in html and "What you can do here" in html
+
+
+def test_write_poster_stays_under_the_limit(tmp_path):
+    out = tmp_path / "poster.webp"
+    size = build.write_poster(build.POSTER_SOURCE, out)
+    assert size == out.stat().st_size <= build.POSTER_MAX_BYTES
+    with Image.open(out) as image:
+        assert image.format == "WEBP"
+        assert image.size == (build.poster_info()["width"], build.poster_info()["height"])
+    # A tight limit makes the build lower the quality, then the size, until it fits.
+    small = build.write_poster(build.POSTER_SOURCE, out, max_bytes=8_000)
+    assert small <= 8_000
+
+
+def test_stress_fixture_renders_dense_columns(good_pinned):
+    news = load_fixture("stress_max.json")
+    for column in news["columns"].values():
+        assert len(column) == 5
+        assert all(len(i["headline"]) == 70 and len(i["summary"]) == 160 for i in column)
+    html = build.render(news, good_pinned)
+    assert html.count('class="column dense"') == 3
 
 
 def test_html_is_escaped(good_news, good_pinned):
@@ -59,6 +154,8 @@ def test_main_writes_site(tmp_path, monkeypatch):
     assert build.main([]) == 0
     assert (tmp_path / "site" / "index.html").is_file()
     assert (tmp_path / "site" / "style.css").is_file()
+    poster = tmp_path / "site" / "img" / "studio-poster.webp"
+    assert 0 < poster.stat().st_size <= build.POSTER_MAX_BYTES
     assert BANNER not in (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
 
 
@@ -91,3 +188,4 @@ def test_preview_cli_uses_data_dir_and_out(tmp_path):
     assert '<meta name="robots" content="noindex">' in html
     assert "Headline only on the dev branch" in html
     assert (out / "style.css").is_file()
+    assert (out / "img" / "studio-poster.webp").is_file()
