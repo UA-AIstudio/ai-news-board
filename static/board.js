@@ -231,6 +231,46 @@
     tickerTrack.style.setProperty("--ticker-duration", seconds.toFixed(1) + "s");
   }
 
+  // Card text size: find the largest --fit (0.8 to 1.5) at which the tallest
+  // page of every card still fits, so short items fill the card and long ones
+  // never get cut off. Layout reads happen only here: at load and on resize.
+  var FIT_MIN = 0.8;
+  var FIT_MAX = 1.5;
+  var cards = $$(".column");
+  function setFit(fit) {
+    cards.forEach(function (col) { col.style.setProperty("--fit", fit.toFixed(3)); });
+  }
+  function cardsFit() {
+    var unit = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    return cards.every(function (col) {
+      var style = window.getComputedStyle(col);
+      var room = col.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+        - $(".column-head", col).offsetHeight;
+      // Leave room for the 8px a page slides up as it fades in.
+      return $(".pages", col).offsetHeight <= room - 12 * unit;
+    });
+  }
+  function fitCards() {
+    if (!cards.length) return;
+    setFit(FIT_MAX);
+    if (cardsFit()) return;
+    var lo = FIT_MIN;
+    var hi = FIT_MAX;
+    for (var step = 0; step < 9; step++) {
+      var mid = (lo + hi) / 2;
+      setFit(mid);
+      if (cardsFit()) lo = mid; else hi = mid;
+    }
+    setFit(lo);
+  }
+  fitCards();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCards);
+  var resizeTimer = 0;
+  window.addEventListener("resize", function () {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(fitCards, 200);
+  });
+
   // Column pages. All pages share one grid cell (see style.css), so a page
   // change never moves the card. A change waits while a spotlight slide is
   // moving, so the two never animate together.
