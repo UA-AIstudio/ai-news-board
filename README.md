@@ -36,8 +36,8 @@ only while the `claude/dev` branch exists.
 The Routine never edits code, HTML, or images. Studio information that
 should always show (Studio hours, the AI desk) lives in `data/pinned.json`,
 is edited by hand, and appears in the Studio panel, not in the On campus
-column or the ticker. When there is no campus news, the column says "No new
-campus AI news this week".
+column or the ticker. When there is no campus news, the On campus card is
+left out and the other two cards share the width.
 
 The Studio hours item also has structured `hours` (24-hour times, Arizona
 time, `null` for closed days). The page uses them to show "Open now, until
@@ -89,7 +89,9 @@ The layout is 1920x1080 and scales exactly to 3840x2160.
   seconds apart (New models, then Tools and research, then On campus), and a
   page never turns while a spotlight slide is moving. A "1 of 3" counter and
   dots in the card header show the page; a card with one page has none.
-  Every card is as tall as its tallest page, so it never changes size.
+  Every card is as tall as its tallest page, so it never changes size, and
+  the card text grows (up to 1.5 times) until the tallest page fills the
+  card, so short items are larger and long items still fit.
 - Right (36 percent): the Studio panel. The poster artwork (cropped, slightly
   desaturated, fading into navy), "What you can do here" with four tiles,
   the open/closed badge, room, hours, email, the AI desk note, and a QR code

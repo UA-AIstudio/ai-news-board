@@ -52,13 +52,14 @@ def test_campus_column_has_news_only(good_news, good_pinned):
     assert headlines == [f"Campus {i}" for i in range(5)]
 
 
-def test_empty_campus_shows_message_not_pinned(good_news, good_pinned):
+def test_empty_campus_card_is_left_out(good_news, good_pinned):
     good_news["columns"]["campus"] = []
     ctx = build.build_context(good_news, good_pinned)
-    assert ctx["columns"][2]["items"] == []
+    assert [c["key"] for c in ctx["columns"]] == ["models", "tools"]
     html = build.render(good_news, good_pinned)
     columns = html[html.index('<div class="columns">'):html.index("</main>")]
-    assert '<p class="empty">No new campus AI news this week</p>' in columns
+    assert columns.count('<section class="column"') == 2
+    assert "On campus" not in columns
     assert "Studio hours" not in columns and "Help desk" not in columns
 
 

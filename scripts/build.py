@@ -41,8 +41,6 @@ COLUMNS = (
 # Each column card shows this many items at a time and rotates through the rest.
 PAGE_SIZE = 2
 
-# Shown in a column that has no items (only "campus" may be empty).
-EMPTY_COLUMN = "No new campus AI news this week"
 
 # The right-hand Studio panel. Public information about the Studio itself.
 STUDIO = {
@@ -294,15 +292,17 @@ def paginate(items: list, size: int = PAGE_SIZE) -> list[list]:
 
 def build_context(news: dict, pinned: list) -> dict:
     """Page data. The columns hold news only; pinned items (Studio hours, the
-    AI desk) go to the Studio panel and are not repeated in the ticker."""
+    AI desk) go to the Studio panel and are not repeated in the ticker. A
+    column with no items (only "campus" may be empty) is left out, and the
+    other cards share its width."""
     columns = [
         {
             "key": key,
             "title": title,
             "items": [prepare_item(i) for i in news["columns"][key]],
-            "empty": EMPTY_COLUMN,
         }
         for key, title in COLUMNS
+        if news["columns"][key]
     ]
     for column in columns:
         column["pages"] = paginate(column["items"])
