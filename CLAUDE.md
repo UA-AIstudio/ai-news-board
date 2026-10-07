@@ -50,8 +50,14 @@ All sizes in `static/style.css` are multiples of `--px` (1px at 1920x1080,
   A page never turns while a spotlight slide is moving. The card header
   shows a "1 of 3" counter and dots, omitted for a single page. All pages
   share one grid cell, so a card is as tall as its tallest page.
-- On campus shows campus news only. When it is empty it says "No new campus
-  AI news this week". Pinned items never appear in the columns or ticker.
+- Card text fills the card: `board.js` sets `--fit` (0.8 to 1.5) at load and
+  on resize to the largest size at which the tallest page of every card
+  still fits, with room for the 8px slide-in. All card text sizes in
+  `style.css` use `--fpx` (`--px` times `--fit`). Without JavaScript `--fit`
+  is 1.
+- On campus shows campus news only. When it is empty the card is left out
+  and the other two cards share its width. Pinned items never appear in the
+  columns or ticker.
 - Right, 36 percent, navy Studio panel: the poster in the top 55 percent,
   then "What you can do here" with four text tiles, the open/closed badge,
   room, hours (built from `pinned.json` `hours`), email, the other pinned
