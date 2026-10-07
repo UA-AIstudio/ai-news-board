@@ -1,7 +1,8 @@
 /* Latest AI News board: live behavior for the TV.
    Inlined into the page by scripts/build.py. Vanilla JS, no dependencies.
-   Without JavaScript the page still shows every item; this only adds motion
-   and live details (clock, studio status, NEW tags, carousel, reload). */
+   Without JavaScript each column shows its first page and the ticker still
+   lists every headline; this adds motion and live details (clock, studio
+   status, NEW tags, carousel, column pages, reload). */
 (function () {
   "use strict";
 
@@ -89,7 +90,24 @@
     return ms - start <= NEW_WINDOW;
   }
 
-  var exported = { arizonaParts: arizonaParts, formatHour: formatHour, studioStatus: studioStatus, isNew: isNew };
+  // Column paging: each card shows 2 items and turns its page every 10
+  // seconds (15 with reduced motion). Columns start 3 seconds apart so they
+  // never turn together.
+  var PAGE_SECONDS = 10;
+  var REDUCED_PAGE_SECONDS = 15;
+  var PAGE_STAGGER = 3;
+
+  /** True if column `index` turns its page after `second` visible seconds. */
+  function pageDue(second, index, reducedMotion) {
+    var period = reducedMotion ? REDUCED_PAGE_SECONDS : PAGE_SECONDS;
+    var since = second - index * PAGE_STAGGER;
+    return since > 0 && since % period === 0;
+  }
+
+  var exported = {
+    arizonaParts: arizonaParts, formatHour: formatHour, studioStatus: studioStatus,
+    isNew: isNew, pageDue: pageDue
+  };
   if (typeof module === "object" && module.exports) module.exports = exported;
   if (typeof document === "undefined") return;
 
@@ -137,15 +155,17 @@
   updateStatus();
 
   // Reachability check: every 10 minutes, reload if the site answers.
-  // The reload waits for the next carousel slide change so it never cuts one off.
+  // The reload waits for the next column page change (or, with no paging, the
+  // next slide change) and happens in its place, so it never cuts one off.
   var reloadPending = false;
   var carouselRunning = false;
+  var pagingRunning = false;
   function checkReachable() {
     fetch(window.location.href, { cache: "no-store" })
       .then(function (response) {
         if (!response.ok) return;
         reloadPending = true;
-        if (!carouselRunning) window.location.reload();
+        if (!carouselRunning && !pagingRunning) window.location.reload();
       })
       .catch(function () {});
   }
@@ -164,7 +184,9 @@
   // Spotlight carousel. The progress bar's CSS animation is the timer:
   // when it ends, the next slide shows. Pausing the animation pauses the carousel.
   var slides = $$(".slide");
-  var dots = $$(".dot");
+  var dots = $$(".spotlight .dot");
+  var SLIDE_MS = 750;
+  var slideBusyUntil = 0;
   var counter = $("#slide-count");
   var progress = $("#progress");
   var current = 0;
@@ -176,11 +198,12 @@
   }
 
   function showSlide(next) {
+    slideBusyUntil = Date.now() + SLIDE_MS;
     var prev = slides[current];
     prev.classList.remove("is-active");
     prev.classList.add("is-leaving");
     prev.setAttribute("aria-hidden", "true");
-    window.setTimeout(function () { prev.classList.remove("is-leaving"); }, 750);
+    window.setTimeout(function () { prev.classList.remove("is-leaving"); }, SLIDE_MS);
     current = next;
     slides[current].classList.add("is-active");
     slides[current].removeAttribute("aria-hidden");
@@ -191,7 +214,7 @@
   if (slides.length > 1 && progress && !reduced) {
     carouselRunning = true;
     progress.addEventListener("animationend", function () {
-      if (reloadPending) { window.location.reload(); return; }
+      if (reloadPending && !pagingRunning) { window.location.reload(); return; }
       showSlide((current + 1) % slides.length);
       startProgress();
     });
@@ -208,18 +231,33 @@
     tickerTrack.style.setProperty("--ticker-duration", seconds.toFixed(1) + "s");
   }
 
-  // Column highlight: every 2 seconds one column moves its highlight to its
-  // next item, so each column steps every 6 seconds, staggered by 2 seconds.
-  var columns = $$(".column").map(function (col) { return { items: $$(".item", col), index: -1 }; });
-  var highlightStep = 0;
-  function highlightNext() {
-    if (!columns.length) return;
-    var col = columns[highlightStep % columns.length];
-    highlightStep++;
-    if (!col.items.length) return;
-    if (col.index >= 0) col.items[col.index].classList.remove("is-lit");
-    col.index = (col.index + 1) % col.items.length;
-    col.items[col.index].classList.add("is-lit");
+  // Column pages. All pages share one grid cell (see style.css), so a page
+  // change never moves the card. A change waits while a spotlight slide is
+  // moving, so the two never animate together.
+  var PAGE_MS = 600;
+  var columns = $$(".column").map(function (col) {
+    return { pages: $$(".page", col), dots: $$(".dot", col), count: $(".page-count", col), index: 0 };
+  });
+  pagingRunning = columns.some(function (col) { return col.pages.length > 1; });
+
+  function showPage(col, next) {
+    var prev = col.pages[col.index];
+    prev.classList.remove("is-active");
+    prev.classList.add("is-leaving");
+    prev.setAttribute("aria-hidden", "true");
+    window.setTimeout(function () { prev.classList.remove("is-leaving"); }, PAGE_MS);
+    col.index = next;
+    col.pages[next].classList.add("is-active");
+    col.pages[next].removeAttribute("aria-hidden");
+    col.dots.forEach(function (d, i) { d.classList.toggle("is-active", i === next); });
+    if (col.count) col.count.textContent = (next + 1) + " of " + col.pages.length;
+  }
+
+  function turnPage(col) {
+    var wait = slideBusyUntil - Date.now();
+    if (wait > 0) { window.setTimeout(function () { turnPage(col); }, wait); return; }
+    if (reloadPending) { window.location.reload(); return; }
+    showPage(col, (col.index + 1) % col.pages.length);
   }
 
   // One scheduler for every timer. It counts only visible seconds, so all
@@ -230,7 +268,9 @@
     if (document.hidden) return;
     visibleSeconds++;
     updateClock();
-    if (!reduced && visibleSeconds % 2 === 0) highlightNext();
+    columns.forEach(function (col, i) {
+      if (col.pages.length > 1 && pageDue(visibleSeconds, i, reduced)) turnPage(col);
+    });
     if (visibleSeconds % 60 === 0) updateStatus();
     if (visibleSeconds % 600 === 0) { checkReachable(); shiftLayout(); }
   }

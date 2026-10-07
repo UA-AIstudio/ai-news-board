@@ -79,18 +79,36 @@
 
         <div class="columns">
           {% for column in columns %}
-          <section class="column{% if column["items"]|length > 4 %} dense{% endif %}" aria-labelledby="col-{{ column.key }}">
-            <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
-            {% if column["items"] %}
-            <ol class="items">
-              {% for item in column["items"] %}
-              <li class="item" data-date="{{ item.iso_date }}">
-                <p class="meta"><span class="tag-new" hidden>NEW</span> <span class="source">{{ item.source }}</span> <span class="sep">{{ column.title }}</span> <span class="date">{{ item.date }}</span></p>
-                <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
-                <p class="summary">{{ item.summary }}</p>
-              </li>
+          <section class="column" aria-labelledby="col-{{ column.key }}">
+            <div class="column-head">
+              <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
+              {% if column.pages|length > 1 %}
+              <div class="page-foot" aria-hidden="true">
+                <ol class="dots">
+                  {% for page in column.pages %}
+                  <li class="dot{% if loop.first %} is-active{% endif %}"></li>
+                  {% endfor %}
+                </ol>
+                <span class="page-count">1 of {{ column.pages|length }}</span>
+              </div>
+              {% endif %}
+            </div>
+            {% if column.pages %}
+            {# All pages share one grid cell, so the card fits the tallest page.
+               Without JavaScript only the first page shows. #}
+            <div class="pages">
+              {% for page in column.pages %}
+              <ol class="items page{% if loop.first %} is-active{% endif %}"{% if not loop.first %} aria-hidden="true"{% endif %}>
+                {% for item in page %}
+                <li class="item" data-date="{{ item.iso_date }}">
+                  <p class="meta"><span class="tag-new" hidden>NEW</span> <span class="source">{{ item.source }}</span> <span class="sep">{{ column.title }}</span> <span class="date">{{ item.date }}</span></p>
+                  <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
+                  <p class="summary">{{ item.summary }}</p>
+                </li>
+                {% endfor %}
+              </ol>
               {% endfor %}
-            </ol>
+            </div>
             {% else %}
             <p class="empty">{{ column.empty }}</p>
             {% endif %}
