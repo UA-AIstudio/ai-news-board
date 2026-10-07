@@ -27,8 +27,9 @@ lib.arizona.edu, news.arizona.edu
   papers.
 - `campus` (0 to 5 items): U of A GenAI updates (responsibleai.arizona.edu),
   University of Arizona Libraries AI news, and AI+ Studio news. Leave it empty
-  if nothing qualifies. Pinned items in `data/pinned.json` fill the rest of the
-  column automatically; do not copy them into `news.json`.
+  if nothing qualifies; the board then shows "No new campus AI news this
+  week". Studio hours and the AI desk live in `data/pinned.json` and show in
+  the Studio panel; do not copy them into `news.json`.
 
 Prefer 4 items per column. Newest first within each column.
 
@@ -95,7 +96,9 @@ request is merged.
    still within 14 days and still among the most important; drop anything
    older than 14 days.
 3. Research and choose items following the rules above.
-4. Edit only `data/news.json`. Do not touch any other file. Set `updated` to the
+4. Edit only `data/news.json`. Do not touch any other file. Never add, change,
+   or remove images: only people add images, under `static/img/`, and CI fails
+   any `claude/` branch that touches that folder. Set `updated` to the
    current time in America/Phoenix with the offset, for example
    `2026-10-04T06:00:00-07:00`.
 5. Run the validator in Routine mode:

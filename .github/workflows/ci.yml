@@ -18,6 +18,20 @@ jobs:
           # Full history so the Routine check can diff against the base branch.
           fetch-depth: 0
 
+      # Only people add or change images. Checked first, so this failure is
+      # reported on its own.
+      - name: Check claude/ branch does not touch static/img/
+        if: startsWith(github.head_ref, 'claude/')
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          changed=$(git diff --name-only "origin/$BASE_REF...HEAD" -- static/img/)
+          if [ -n "$changed" ]; then
+            echo "::error title=Images are added by people only::A claude/ branch changed files under static/img/"
+            echo "$changed"
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:

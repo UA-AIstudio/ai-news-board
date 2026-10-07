@@ -9,85 +9,132 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="backdrop" aria-hidden="true"></div>
   <div class="stage" id="stage">
+    <div class="topbar" aria-hidden="true"></div>
     {% if preview %}
     <div class="preview-banner" role="status">Preview, not live. Awaiting review.</div>
     {% endif %}
     <header class="masthead">
-      <h1>Latest AI News</h1>
+      <div class="brand">
+        <p class="brand-label">AI+ Studio</p>
+        <span class="brand-rule" aria-hidden="true"></span>
+        <h1>Latest AI News</h1>
+      </div>
       <div class="timebox">
+        <div class="checked">
+          <span class="checked-dot" aria-hidden="true"></span>
+          <p><span class="checked-time">Checked at {{ checked.time }} Arizona time</span> <span class="checked-date">{{ checked.date }}</span></p>
+        </div>
         <p class="clock" id="clock" hidden></p>
-        <p class="updated">Updated {{ updated }} Arizona time</p>
       </div>
     </header>
 
-    {% if spotlight %}
-    <section class="spotlight" aria-roledescription="carousel" aria-labelledby="spotlight-title">
-      <h2 class="visually-hidden" id="spotlight-title">Spotlight</h2>
-      <div class="slides">
-        {% for item in spotlight %}
-        <article class="slide{% if item.metrics %} has-metrics{% endif %}{% if loop.first %} is-active{% endif %}" data-date="{{ item.iso_date }}"{% if not loop.first %} aria-hidden="true"{% endif %}>
-          <div class="slide-text">
-            <p class="slide-kind">{{ item.kind }} <span class="tag-new" hidden>NEW</span></p>
-            <h3 class="slide-headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
-            <p class="slide-summary">{{ item.summary }}</p>
-            <p class="meta">{{ item.source }}, {{ item.date }} <span class="domain">{{ item.domain }}</span></p>
-          </div>
-          {% if item.metrics %}
-          <div class="metrics">
-            <ul class="metric-list">
-              {% for metric in item.metrics %}
-              <li class="metric">
-                <span class="metric-label">{{ metric.label }}</span>
-                <span class="metric-value">{{ metric.text }}</span>
-                {% if metric.fill is not none %}
-                <span class="metric-track"><span class="metric-fill" style="--fill: {{ metric.fill }}"></span></span>
+    <div class="layout">
+      <main class="brief">
+        <p class="kicker">Your daily brief</p>
+
+        {% if spotlight %}
+        <section class="spotlight" aria-roledescription="carousel" aria-labelledby="spotlight-title">
+          <h2 class="visually-hidden" id="spotlight-title">Spotlight</h2>
+          <div class="slides">
+            {% for item in spotlight %}
+            <article class="slide{% if item.metrics %} has-metrics{% endif %}{% if loop.first %} is-active{% endif %}" data-date="{{ item.iso_date }}"{% if not loop.first %} aria-hidden="true"{% endif %}>
+              <div class="slide-text">
+                <p class="slide-kind"><span class="tag-new" hidden>NEW</span> <span class="kind">{{ item.kind }}</span> <span class="sep">{{ item.source }}</span></p>
+                <h3 class="slide-headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
+                <p class="slide-summary">{{ item.summary }}</p>
+                {% if item.metrics %}
+                <ul class="metric-list">
+                  {% for metric in item.metrics %}
+                  <li class="metric">
+                    <span class="metric-label">{{ metric.label }}</span>
+                    <span class="metric-value">{{ metric.text }}</span>
+                    {% if metric.fill is not none %}
+                    <span class="metric-track"><span class="metric-fill" style="--fill: {{ metric.fill }}"></span></span>
+                    {% endif %}
+                  </li>
+                  {% endfor %}
+                </ul>
                 {% endif %}
+                <p class="slide-meta">{{ item.date }} <span class="domain">{{ item.domain }}</span>{% if item.metrics %} <span class="metric-source">Reported by {{ item.reported_by }}</span>{% endif %}</p>
+              </div>
+              <figure class="slide-qr">
+                {{ item.qr }}
+                <figcaption>Scan to read the source</figcaption>
+              </figure>
+            </article>
+            {% endfor %}
+          </div>
+          <div class="spotlight-foot" aria-hidden="true">
+            <div class="progress"><span class="progress-fill" id="progress"></span></div>
+            <ol class="dots">
+              {% for item in spotlight %}
+              <li class="dot{% if loop.first %} is-active{% endif %}"></li>
+              {% endfor %}
+            </ol>
+            <span class="slide-count" id="slide-count">1 of {{ spotlight|length }}</span>
+          </div>
+        </section>
+        {% endif %}
+
+        <div class="columns">
+          {% for column in columns %}
+          <section class="column{% if column["items"]|length > 4 %} dense{% endif %}" aria-labelledby="col-{{ column.key }}">
+            <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
+            {% if column["items"] %}
+            <ol class="items">
+              {% for item in column["items"] %}
+              <li class="item" data-date="{{ item.iso_date }}">
+                <p class="meta"><span class="tag-new" hidden>NEW</span> <span class="source">{{ item.source }}</span> <span class="sep">{{ column.title }}</span> <span class="date">{{ item.date }}</span></p>
+                <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a></h3>
+                <p class="summary">{{ item.summary }}</p>
               </li>
               {% endfor %}
-            </ul>
-            <p class="metric-source">Reported by {{ item.reported_by }}</p>
-          </div>
-          {% endif %}
-          <figure class="slide-qr">
-            {{ item.qr }}
-            <figcaption>Scan to read the source</figcaption>
-          </figure>
-        </article>
-        {% endfor %}
-      </div>
-      <div class="spotlight-foot" aria-hidden="true">
-        <div class="progress"><span class="progress-fill" id="progress"></span></div>
-        <ol class="dots">
-          {% for item in spotlight %}
-          <li class="dot{% if loop.first %} is-active{% endif %}"></li>
-          {% endfor %}
-        </ol>
-        <span class="slide-count" id="slide-count">1 of {{ spotlight|length }}</span>
-      </div>
-    </section>
-    {% endif %}
-
-    <main class="columns">
-      {% for column in columns %}
-      <section class="column{% if column["items"]|length > 4 %} dense{% endif %}" aria-labelledby="col-{{ column.key }}">
-        <h2 id="col-{{ column.key }}">{{ column.title }}</h2>
-        <ol class="items">
-          {% for item in column["items"] %}
-          <li class="item"{% if item.iso_date %} data-date="{{ item.iso_date }}"{% endif %}>
-            <h3 class="headline"><a href="{{ item.url }}">{{ item.headline }}</a>{% if item.iso_date %} <span class="tag-new" hidden>NEW</span>{% endif %}</h3>
-            {% if item.has_hours %}
-            <p class="status" id="studio-status" hidden><span class="status-dot"></span><span class="status-text"></span></p>
+            </ol>
+            {% else %}
+            <p class="empty">{{ column.empty }}</p>
             {% endif %}
-            <p class="summary">{{ item.summary }}</p>
-            <p class="meta">{{ item.source }}{% if item.date %}, {{ item.date }}{% endif %} <span class="domain">{{ item.domain }}</span></p>
-          </li>
+          </section>
           {% endfor %}
-        </ol>
-      </section>
-      {% endfor %}
-    </main>
+        </div>
+      </main>
+
+      <aside class="studio" aria-labelledby="studio-title">
+        <div class="studio-glow" aria-hidden="true"></div>
+        {% if poster %}
+        <figure class="studio-art">
+          <img src="{{ poster.src }}" width="{{ poster.width }}" height="{{ poster.height }}" alt="Students and a friendly robot working together at laptops in the AI+ Studio">
+        </figure>
+        {% endif %}
+        <div class="studio-body">
+          <h2 id="studio-title">What you can do here</h2>
+          <ul class="offers">
+            {% for offer in studio.offers %}
+            <li>{{ offer }}</li>
+            {% endfor %}
+          </ul>
+          <div class="visit">
+            <div class="visit-text">
+              {% if hours %}
+              <p class="status" id="studio-status" hidden><span class="status-dot"></span><span class="status-text"></span></p>
+              {% endif %}
+              <p class="visit-line">{{ studio.room }}</p>
+              {% if hours_text %}
+              <p class="visit-line">{{ hours_text }}</p>
+              {% endif %}
+              <p class="visit-line">{{ studio.email }}</p>
+              {% for note in notes %}
+              <p class="note"><span class="note-title">{{ note.headline }}.</span> {{ note.summary }}</p>
+              {% endfor %}
+            </div>
+            <figure class="visit-qr">
+              {{ studio.qr }}
+              <figcaption>Scan to visit the Studio</figcaption>
+            </figure>
+          </div>
+        </div>
+      </aside>
+    </div>
 
     <div class="ticker" aria-hidden="true">
       <div class="ticker-track">

@@ -93,10 +93,10 @@ def test_spotlight_shows_metrics_and_reporter(good_pinned):
     assert '<span class="metric-value">180</span>' in html
     assert 'style="--fill: 0.7140"' in html
     assert html.count('class="metric-fill"') == 1  # the lone unitless value has no bar
-    assert "Reported by Anthropic" in html
+    assert '<span class="metric-source">Reported by Anthropic</span>' in html
     assert html.count('class="slide has-metrics') == 1
 
 
 def test_no_metrics_no_panel(good_news, good_pinned):
     html = build.render(good_news, good_pinned)
-    assert 'class="metrics"' not in html and "Reported by" not in html
+    assert 'class="metric-list"' not in html and "Reported by" not in html

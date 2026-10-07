@@ -2,7 +2,9 @@
 
 A one-page news board for the TV in the AI+ Studio, University of Arizona
 Libraries (Weaver Science-Engineering Library, room 212). It shows recent AI
-news in three columns: New models, Tools and research, and On campus.
+news as a daily brief: a spotlight card and three columns (New models, Tools
+and research, On campus), next to a navy Studio panel with the AI+ Studio
+poster artwork, what you can do in the Studio, its hours and a QR code.
 
 - Live board (shown on the TV, built from `main`):
   https://ua-aistudio.github.io/ai-news-board/
@@ -31,12 +33,16 @@ only while the `claude/dev` branch exists.
 7. The TV page checks the site every 10 minutes and reloads when the site is
    reachable. If the network is down, it keeps showing the current page.
 
-The Routine never edits code or HTML. Campus items that should always show
-(Studio hours, the AI desk) live in `data/pinned.json` and are edited by hand.
+The Routine never edits code, HTML, or images. Studio information that
+should always show (Studio hours, the AI desk) lives in `data/pinned.json`,
+is edited by hand, and appears in the Studio panel, not in the On campus
+column or the ticker. When there is no campus news, the column says "No new
+campus AI news this week".
 
 The Studio hours item also has structured `hours` (24-hour times, Arizona
 time, `null` for closed days). The page uses them to show "Open now, until
-6pm" or "Closed, opens Monday 11am".
+6pm" or "Closed, opens Monday 11am", and the build turns them into the hours
+line in the panel ("Mon to Thu 11am to 6pm, Fri 11am to 5pm").
 
 ### Adding a holiday or other closure
 
@@ -63,20 +69,31 @@ normally be open, add an entry to `closures` on the "AI+ Studio hours" item in
 
 ## What the TV page does
 
-- A spotlight band cycles through every model and tool item, newest first,
-  12 seconds each. Each slide has a QR code for the item's source ("Scan to
+The layout is 1920x1080 and scales exactly to 3840x2160.
+
+- Header: a red top bar, "AI+ Studio | Latest AI News", a "Checked at <time>
+  Arizona time" card with the date, and a live Arizona clock.
+- Left (64 percent): a red "YOUR DAILY BRIEF" kicker, then the spotlight
+  card, which cycles through every model and tool item, newest first, 12
+  seconds each. Each slide has a QR code for the item's source ("Scan to
   read the source"), generated at build time with the `qrcode` package.
 - Items with metrics show them on their slide as Arizona Red bars that grow
   in over 800ms, with the label, the exact value, and "Reported by ...".
   Percentages fill against 100; other values fill against the largest value
   with the same unit on that item, and a value with nothing to compare
   against shows as text only.
-- A live Arizona clock sits top right, above the "Updated" line.
+- Below the spotlight, three white cards list the items compactly: source,
+  category and date, headline, and a short summary. Each card softly
+  highlights one item at a time.
+- Right (36 percent): the Studio panel. The poster artwork (cropped, slightly
+  desaturated, fading into navy), "What you can do here" with four tiles,
+  the open/closed badge, room, hours, email, the AI desk note, and a QR code
+  to the Studio page ("Scan to visit the Studio").
 - Items dated within 48 hours of the page load get a red NEW tag.
-- A ticker above the footer scrolls every headline.
-- Each column softly highlights one item at a time.
-- The background drifts very slowly, and the whole layout shifts by up to
-  2px every 10 minutes to protect the TV from burn-in.
+- A navy ticker above the footer scrolls every news headline.
+- A faint light drifts very slowly behind the Studio panel text, and the
+  whole layout shifts by up to 2px every 10 minutes to protect the TV from
+  burn-in.
 - Every 10 minutes the page checks that the site is reachable and reloads
   between spotlight slides. If the network is down, it keeps the current page.
 - All motion pauses while the page is hidden and turns off for viewers who
@@ -94,7 +111,8 @@ python scripts/validate.py
 python scripts/build.py
 ```
 
-Then open `site/index.html` in a browser. To see the preview version with the
+The build needs Pillow (in `requirements.txt`) to convert the poster to
+WebP. Then open `site/index.html` in a browser. To see the preview version with the
 banner, run `python scripts/build.py --preview --out site/dev` and open
 `site/dev/index.html`. For a TV preview, set the window to
 1920x1080 and use full screen.
@@ -115,8 +133,9 @@ banner, run `python scripts/build.py --preview --out site/dev` and open
   over 4 characters, a value that is not a finite number, or a `%` value
   outside 0 to 100.
 - An item has metrics without `reported_by`, or `reported_by` without metrics.
-- With `--routine-pr BASE_REF`: any file other than `data/news.json` changed,
-  or any item is more than 14 days old.
+- With `--routine-pr BASE_REF`: any file other than `data/news.json` changed
+  (with its own message for images under `static/img/`), or any item is more
+  than 14 days old.
 
 Without `--routine-pr` (design pull requests and deploys), items more than 14
 days old are printed as warnings and the run still passes, so stale news never
@@ -127,8 +146,8 @@ from `claude/` branches, so news updates must be fresh.
 
 1. Check that CI passed.
 2. Open the dev link, https://ua-aistudio.github.io/ai-news-board/dev/, and
-   check that the board looks right: three columns, nothing cut off, the
-   "Updated" time is today.
+   check that the board looks right: spotlight, three columns, Studio panel,
+   nothing cut off, and the "Checked at" date is today.
 3. Open the Files tab. Only `data/news.json` should be changed.
 4. Open each new link. Confirm the page exists, is on the right topic, and has
    the date shown in the item.
@@ -144,10 +163,27 @@ from `claude/` branches, so news updates must be fresh.
 ## How to change the design
 
 1. Create a branch from `main`.
-2. Edit `templates/index.html.j2` and `static/style.css`.
-3. Run `python scripts/build.py` and check `site/index.html` at 1920x1080,
-   including a column with five items.
-4. Open a pull request. Merge after review.
+2. Edit `templates/index.html.j2` and `static/style.css`. Size everything in
+   `--px` units so 4K stays an exact 2x.
+3. Run `python scripts/build.py` and check `site/index.html` at 1920x1080 and
+   3840x2160, live and with `--preview`. Also build with
+   `tests/fixtures/stress_max.json` (5 items per column at maximum length):
+   nothing may be cut off, overlap, or scroll.
+4. Use only the palette in CLAUDE.md; `python -m pytest` checks the colors
+   and their contrast.
+5. Open a pull request. Merge after review.
+
+## Images
+
+Only people add or change images, under `static/img/`. The Routine never
+does, and CI fails any `claude/` branch pull request that touches that folder.
+
+The poster is `static/img/studio-poster.png` (the original, kept in the repo).
+The build crops it to `POSTER_FOCUS` in `scripts/build.py` (the students and
+the robot, leaving out the poster's own text, which the panel shows as real
+text) and writes a WebP under 400 KB. To replace the poster, commit a new PNG
+with the same name in a pull request, then check `POSTER_FOCUS` and the
+panel at 1920x1080.
 
 To change the allowed sites, edit `ALLOWED_DOMAINS` in `scripts/validate.py`
 and the Routine environment's network settings in the same change.

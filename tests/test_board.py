@@ -170,9 +170,11 @@ def test_ticker_includes_every_headline_twice(good_news, good_pinned):
     html = build.render(good_news, good_pinned)
     ticker = html[html.index('<div class="ticker"'):html.index('<footer')]
     headlines = [i["headline"] for col in good_news["columns"].values() for i in col]
-    headlines += [p["headline"] for p in good_pinned]
     for headline in headlines:
         assert ticker.count(f'<span class="ticker-item">{headline}</span>') == 2, headline
+    # Pinned items are Studio information, not news, so they stay out of the ticker.
+    for pinned in good_pinned:
+        assert pinned["headline"] not in ticker
 
 
 def test_spotlight_has_models_and_tools_newest_first(good_news, good_pinned):
@@ -186,7 +188,7 @@ def test_spotlight_has_models_and_tools_newest_first(good_news, good_pinned):
 
 def test_columns_still_list_every_item(good_news, good_pinned):
     html = build.render(good_news, good_pinned)
-    columns = html[html.index('<main class="columns">'):html.index("</main>")]
+    columns = html[html.index('<div class="columns">'):html.index("</main>")]
     for col in good_news["columns"].values():
         for item in col:
             assert f'href="{item["url"]}">{item["headline"]}</a>' in columns
@@ -195,7 +197,8 @@ def test_columns_still_list_every_item(good_news, good_pinned):
 def test_page_has_live_hooks_and_no_em_dash(good_news, good_pinned):
     html = build.render(good_news, good_pinned)
     assert 'id="clock"' in html and 'id="studio-status"' in html and 'id="studio-hours"' in html
-    assert html.count("<svg") == len(good_news["columns"]["models"]) + len(good_news["columns"]["tools"])
+    # One QR per spotlight slide, plus the Studio QR in the panel.
+    assert html.count("<svg") == len(good_news["columns"]["models"]) + len(good_news["columns"]["tools"]) + 1
     assert '<meta name="theme-color" content="#0C234B">' in html
     assert 'cache: "no-store"' in html and "response.ok" in html
     assert EM_DASH not in html
