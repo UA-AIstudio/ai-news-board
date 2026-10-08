@@ -41,9 +41,6 @@ COLUMNS = (
 # Each column card shows this many items at a time and rotates through the rest.
 PAGE_SIZE = 2
 
-# Shown in the On campus column when it has no items (only "campus" may be empty).
-EMPTY_COLUMN = "No new campus AI news this week"
-
 
 # The right-hand Studio panel. Public information about the Studio itself.
 STUDIO = {
@@ -58,29 +55,16 @@ STUDIO = {
     ),
 }
 
-# The Studio panel image. People add and replace images under static/img/;
-# the build converts the image to WebP for the page. A dedicated
-# studio-art.png (no baked-in words) is used whole when it exists; otherwise
-# the build crops the poster.
-ART_SOURCE = STATIC_DIR / "img" / "studio-art.png"
+# The poster artwork for the Studio panel. People add and replace images under
+# static/img/; the build converts the poster to WebP for the page.
 POSTER_SOURCE = STATIC_DIR / "img" / "studio-poster.png"
-POSTER_PATH = "img/studio-art.webp"
-POSTER_MAX_BYTES = 500_000
-# The part of studio-poster.png (1774x887) the panel shows, in source pixels
-# (left, top, right, bottom): the robot and the two students at the laptop.
-# Every edge stops short of the poster's words:
-#   left 1000   past the ARIZONA shirt (ends at x 948) and the face of the
-#               student on the left, so no half face sits at the edge
-#   top 304     below the BE CURIOUS / TOGETHER shirt (ends at y 300)
-#   right 1590  left of the big A logo and the wall sign (start at x 1597)
-#   bottom 468  above HUMAN IDEAS on the laptop (y 479), WILDCATS (y 480)
-#               and the A logo on the middle shirt (y 470)
-# Check it whenever the poster is replaced.
-POSTER_CROP = (1000, 304, 1590, 468)
-# Output width: the panel is 36 percent of 3840, so 1382px is one source pixel
-# per screen pixel at 4K. Smaller sources are upscaled with Lanczos once here
-# rather than by the browser.
-POSTER_WIDTH = 1382
+POSTER_PATH = "img/studio-poster.webp"
+POSTER_MAX_BYTES = 400_000
+# The part of the poster the panel shows, as fractions of its width and height
+# (left, top, right, bottom): the students and the robot. This trims the
+# poster's own title, tiles and contact strip, which the panel already shows
+# as text. Check it whenever the poster is replaced.
+POSTER_FOCUS = (0.465, 0.03, 0.885, 0.71)
 
 DAY_KEYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
@@ -258,47 +242,30 @@ def spotlight_items(news: dict) -> list[dict]:
     return sorted(items, key=lambda i: i["iso_date"], reverse=True)
 
 
-def art_source() -> tuple[Path, tuple[int, int, int, int] | None] | None:
-    """The panel image and the box to crop from it, or None if there is none."""
-    if ART_SOURCE.is_file():
-        return ART_SOURCE, None
-    if POSTER_SOURCE.is_file():
-        return POSTER_SOURCE, POSTER_CROP
-    return None
-
-
-def poster_size(box_size: tuple[int, int]) -> tuple[int, int]:
-    """Output size: POSTER_WIDTH wide, keeping the aspect ratio."""
-    width, height = box_size
-    return POSTER_WIDTH, round(height * POSTER_WIDTH / width)
-
-
-def poster_info() -> dict | None:
-    """Size of the panel image, for the img tag, or None if there is no image."""
-    found = art_source()
-    if found is None:
+def poster_info(source: Path = POSTER_SOURCE) -> dict | None:
+    """Size of the cropped poster, for the img tag, or None if there is no poster."""
+    if not source.is_file():
         return None
-    source, box = found
     with Image.open(source) as image:
-        left, top, right, bottom = box or (0, 0, *image.size)
-    width, height = poster_size((right - left, bottom - top))
-    return {"src": POSTER_PATH, "width": width, "height": height}
+        left, top, right, bottom = poster_box(image.size)
+    return {"src": POSTER_PATH, "width": right - left, "height": bottom - top}
 
 
-def write_poster(source: Path, dest: Path, box: tuple[int, int, int, int] | None = None,
-                 max_bytes: int = POSTER_MAX_BYTES) -> int:
-    """Crop the image to box, resize it to POSTER_WIDTH and save it as WebP
-    under max_bytes.
+def poster_box(size: tuple[int, int]) -> tuple[int, int, int, int]:
+    width, height = size
+    left, top, right, bottom = POSTER_FOCUS
+    return (round(left * width), round(top * height), round(right * width), round(bottom * height))
+
+
+def write_poster(source: Path, dest: Path, max_bytes: int = POSTER_MAX_BYTES) -> int:
+    """Crop the poster to POSTER_FOCUS and save it as WebP under max_bytes.
 
     Lowers the quality first, then the size, until it fits. Returns the bytes written.
     """
     with Image.open(source) as image:
-        image = image.convert("RGB")
-        if box:
-            image = image.crop(box)
-        image = image.resize(poster_size(image.size), Image.LANCZOS)
+        image = image.convert("RGB").crop(poster_box(image.size))
     while True:
-        for quality in (86, 78, 70, 62, 54):
+        for quality in (82, 74, 66, 58, 50):
             buffer = io.BytesIO()
             image.save(buffer, "WEBP", quality=quality, method=6)
             if buffer.tell() <= max_bytes:
@@ -325,16 +292,17 @@ def paginate(items: list, size: int = PAGE_SIZE) -> list[list]:
 
 def build_context(news: dict, pinned: list) -> dict:
     """Page data. The columns hold news only; pinned items (Studio hours, the
-    AI desk) go to the Studio panel and are not repeated in the ticker. All
-    three columns always render; an empty one shows EMPTY_COLUMN."""
+    AI desk) go to the Studio panel and are not repeated in the ticker. A
+    column with no items (only "campus" may be empty) is left out, and the
+    other cards share its width."""
     columns = [
         {
             "key": key,
             "title": title,
             "items": [prepare_item(i) for i in news["columns"][key]],
-            "empty": EMPTY_COLUMN,
         }
         for key, title in COLUMNS
+        if news["columns"][key]
     ]
     for column in columns:
         column["pages"] = paginate(column["items"])
@@ -394,10 +362,8 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True)
     (out / "index.html").write_text(html, encoding="utf-8")
     shutil.copy2(STATIC_DIR / "style.css", out / "style.css")
-    found = art_source()
-    if found:
-        source, box = found
-        write_poster(source, out / POSTER_PATH, box)
+    if POSTER_SOURCE.is_file():
+        write_poster(POSTER_SOURCE, out / POSTER_PATH)
     print(f"Built {out / 'index.html'}{' (preview)' if args.preview else ''}")
     return 0
 
