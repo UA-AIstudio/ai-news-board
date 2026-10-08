@@ -247,7 +247,8 @@
       var room = col.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
         - $(".column-head", col).offsetHeight;
       // Leave room for the 8px a page slides up as it fades in.
-      return $(".pages", col).offsetHeight <= room - 12 * unit;
+      var pages = $(".pages", col);
+      return !pages || pages.offsetHeight <= room - 12 * unit;
     });
   }
   function fitCards() {
