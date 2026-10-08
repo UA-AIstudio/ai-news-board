@@ -114,3 +114,9 @@ def test_card_text_scales_with_fit():
     for body in rules:
         sizes = re.findall(r"(?:font-size|padding|margin-top):\s*([^;]+);", body)
         assert sizes and all("--fpx" in v or v.strip() == "0" for v in sizes), body
+
+
+def test_page_height_never_uses_100vh():
+    """100vh can include browser toolbars and push the footer off screen."""
+    for body in css_rules(r"^\s*(html|body|\.stage)(\s*,\s*(html|body))?\s*$"):
+        assert "100vh" not in body, body

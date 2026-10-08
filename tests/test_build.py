@@ -52,15 +52,25 @@ def test_campus_column_has_news_only(good_news, good_pinned):
     assert headlines == [f"Campus {i}" for i in range(5)]
 
 
-def test_empty_campus_card_is_left_out(good_news, good_pinned):
-    good_news["columns"]["campus"] = []
+@pytest.mark.parametrize("campus_items", [0, 1, 5])
+def test_third_column_always_renders(good_news, good_pinned, campus_items):
+    campus = good_news["columns"]["campus"][0]
+    good_news["columns"]["campus"] = [dict(campus, headline=f"Campus {i}") for i in range(campus_items)]
     ctx = build.build_context(good_news, good_pinned)
-    assert [c["key"] for c in ctx["columns"]] == ["models", "tools"]
+    assert [c["key"] for c in ctx["columns"]] == ["models", "tools", "campus"]
     html = build.render(good_news, good_pinned)
     columns = html[html.index('<div class="columns">'):html.index("</main>")]
-    assert columns.count('<section class="column"') == 2
-    assert "On campus" not in columns
+    assert columns.count('<section class="column"') == 3
+    assert '<h2 id="col-campus">On campus</h2>' in columns
+    empty = '<p class="empty">No new campus AI news this week</p>'
+    assert (empty in columns) is (campus_items == 0)
     assert "Studio hours" not in columns and "Help desk" not in columns
+
+
+def test_three_equal_columns_in_css():
+    css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
+    rule = css[css.index(".columns {"):]
+    assert "grid-template-columns: repeat(3, minmax(0, 1fr));" in rule[:rule.index("}")]
 
 
 def test_pinned_items_go_to_the_studio_panel(good_news, good_pinned):
@@ -104,33 +114,66 @@ def test_studio_panel(good_news, good_pinned):
     assert "<a " not in panel and "<button" not in panel
 
 
-def test_poster_is_cropped_not_stretched(good_news, good_pinned):
+def test_panel_image_is_cropped_not_stretched(good_news, good_pinned):
     html = build.render(good_news, good_pinned)
     poster = build.poster_info()
     assert poster is not None
-    assert f'<img src="img/studio-poster.webp" width="{poster["width"]}" height="{poster["height"]}"' in html
+    assert f'<img src="img/studio-art.webp" width="{poster["width"]}" height="{poster["height"]}"' in html
     css = (ROOT / "static" / "style.css").read_text(encoding="utf-8")
     rule = css[css.index(".studio-art img {"):]
     rule = rule[:rule.index("}")]
-    assert "object-fit: cover" in rule and "saturate(0.8)" in rule
+    assert "object-fit: cover" in rule and "saturate(0.7) brightness(0.9)" in rule
+    blend = css[css.index(".studio-art::after {"):]
+    blend = blend[:blend.index("}")]
+    assert "rgba(12, 35, 75, 0.55) 0%, rgba(12, 35, 75, 0) 25%" in blend
+    assert "rgba(12, 35, 75, 0.9) 0%, rgba(12, 35, 75, 0) 40%" in blend
+
+
+def test_poster_crop_is_inside_the_poster_and_keeps_its_aspect():
+    with Image.open(build.POSTER_SOURCE) as image:
+        width, height = image.size
+    left, top, right, bottom = build.POSTER_CROP
+    assert 0 <= left < right <= width and 0 <= top < bottom <= height
+    info = build.poster_info()
+    assert info["width"] == build.POSTER_WIDTH == 1382
+    assert abs(info["width"] / info["height"] - (right - left) / (bottom - top)) < 0.01
+
+
+def test_studio_art_is_used_whole_when_present(monkeypatch, tmp_path):
+    art = tmp_path / "studio-art.png"
+    Image.new("RGB", (2400, 1600), (40, 80, 120)).save(art)
+    monkeypatch.setattr(build, "ART_SOURCE", art)
+    assert build.art_source() == (art, None)
+    assert build.poster_info() == {"src": "img/studio-art.webp", "width": 1382, "height": 921}
+    out = tmp_path / "out.webp"
+    build.write_poster(art, out)
+    with Image.open(out) as image:
+        assert image.size == (1382, 921)
+
+
+def test_poster_is_cropped_when_there_is_no_studio_art(monkeypatch, tmp_path):
+    monkeypatch.setattr(build, "ART_SOURCE", tmp_path / "missing.png")
+    assert build.art_source() == (build.POSTER_SOURCE, build.POSTER_CROP)
 
 
 def test_no_poster_means_no_image(good_news, good_pinned, monkeypatch, tmp_path):
+    monkeypatch.setattr(build, "ART_SOURCE", tmp_path / "missing-art.png")
     monkeypatch.setattr(build, "POSTER_SOURCE", tmp_path / "missing.png")
-    monkeypatch.setattr(build, "poster_info", lambda: None)
+    assert build.poster_info() is None
     html = build.render(good_news, good_pinned)
     assert "<img" not in html and "What you can do here" in html
 
 
 def test_write_poster_stays_under_the_limit(tmp_path):
     out = tmp_path / "poster.webp"
-    size = build.write_poster(build.POSTER_SOURCE, out)
+    size = build.write_poster(build.POSTER_SOURCE, out, build.POSTER_CROP)
+    assert build.POSTER_MAX_BYTES == 500_000
     assert size == out.stat().st_size <= build.POSTER_MAX_BYTES
     with Image.open(out) as image:
         assert image.format == "WEBP"
         assert image.size == (build.poster_info()["width"], build.poster_info()["height"])
     # A tight limit makes the build lower the quality, then the size, until it fits.
-    small = build.write_poster(build.POSTER_SOURCE, out, max_bytes=8_000)
+    small = build.write_poster(build.POSTER_SOURCE, out, build.POSTER_CROP, max_bytes=8_000)
     assert small <= 8_000
 
 
@@ -191,7 +234,7 @@ def test_main_writes_site(tmp_path, monkeypatch):
     assert build.main([]) == 0
     assert (tmp_path / "site" / "index.html").is_file()
     assert (tmp_path / "site" / "style.css").is_file()
-    poster = tmp_path / "site" / "img" / "studio-poster.webp"
+    poster = tmp_path / "site" / "img" / "studio-art.webp"
     assert 0 < poster.stat().st_size <= build.POSTER_MAX_BYTES
     assert BANNER not in (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
 
@@ -225,4 +268,4 @@ def test_preview_cli_uses_data_dir_and_out(tmp_path):
     assert '<meta name="robots" content="noindex">' in html
     assert "Headline only on the dev branch" in html
     assert (out / "style.css").is_file()
-    assert (out / "img" / "studio-poster.webp").is_file()
+    assert (out / "img" / "studio-art.webp").is_file()
