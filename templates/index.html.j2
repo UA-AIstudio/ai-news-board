@@ -93,7 +93,6 @@
               </div>
               {% endif %}
             </div>
-            {% if column.pages %}
             {# All pages share one grid cell, so the card fits the tallest page.
                Without JavaScript only the first page shows. #}
             <div class="pages">
@@ -109,9 +108,6 @@
               </ol>
               {% endfor %}
             </div>
-            {% else %}
-            <p class="empty">{{ column.empty }}</p>
-            {% endif %}
           </section>
           {% endfor %}
         </div>
@@ -121,18 +117,16 @@
         <div class="studio-glow" aria-hidden="true"></div>
         {% if poster %}
         <figure class="studio-art">
-          <img src="{{ poster.src }}" width="{{ poster.width }}" height="{{ poster.height }}" alt="Students and a friendly robot working together at a laptop in the AI+ Studio">
+          <img src="{{ poster.src }}" width="{{ poster.width }}" height="{{ poster.height }}" alt="Students and a friendly robot working together at laptops in the AI+ Studio">
         </figure>
         {% endif %}
         <div class="studio-body">
-          <div class="offer-block">
-            <h2 id="studio-title">What you can do here</h2>
-            <ul class="offers">
-              {% for offer in studio.offers %}
-              <li>{{ offer }}</li>
-              {% endfor %}
-            </ul>
-          </div>
+          <h2 id="studio-title">What you can do here</h2>
+          <ul class="offers">
+            {% for offer in studio.offers %}
+            <li>{{ offer }}</li>
+            {% endfor %}
+          </ul>
           <div class="visit">
             <div class="visit-text">
               {% if hours %}
