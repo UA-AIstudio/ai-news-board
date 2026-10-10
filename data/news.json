@@ -1,7 +1,14 @@
 {
-  "updated": "2026-10-06T05:50:00-07:00",
+  "updated": "2026-10-10T05:55:00-07:00",
   "columns": {
     "models": [
+      {
+        "headline": "Anthropic releases Claude Haiku 5.5",
+        "summary": "Anthropic describes Haiku 5.5 as a faster, lower-cost small model for high-volume tasks, priced about 75 percent below Haiku 4.5 on average.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/claude-haiku-5-5",
+        "date": "2026-10-07"
+      },
       {
         "headline": "Gemini 4 Argon announced for complex reasoning work",
         "summary": "Google introduced Gemini 4 Argon for software engineering, knowledge work and cyber defense, rolling out first to trusted testers.",
@@ -15,43 +22,29 @@
         "source": "Anthropic",
         "url": "https://www.anthropic.com/claude-sonnet-5-5",
         "date": "2026-09-28"
-      },
-      {
-        "headline": "Google adds Gemini 3.8 Flash TTS and Flash-Lite TTS",
-        "summary": "New text-to-speech models generate customizable, expressive voices and are rolling out in Google AI Studio and the Gemini API.",
-        "source": "Google",
-        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-8-text-to-speech/",
-        "date": "2026-09-23"
-      },
-      {
-        "headline": "Anthropic releases Claude Opus 5.5",
-        "summary": "Anthropic says Opus 5.5 performs near Claude Fable 5.1 while costing 40 percent less, and it is available on major cloud platforms.",
-        "source": "Anthropic",
-        "url": "https://www.anthropic.com/claude-opus-5-5",
-        "date": "2026-09-22"
       }
     ],
     "tools": [
       {
-        "headline": "Claude used to identify a new CRISPR-like enzyme system",
-        "summary": "Anthropic's life sciences group reports that Claude helped find array-associated reverse transcriptases in bacteriophages.",
+        "headline": "Anthropic launches Cyber Mission for defenders",
+        "summary": "The program includes a Critical Infrastructure Defense Program and a free OSS Scanner service to help secure critical infrastructure and open-source software.",
         "source": "Anthropic",
-        "url": "https://www.anthropic.com/news/claude-discovers-novel-enzyme-system",
-        "date": "2026-09-23"
+        "url": "https://www.anthropic.com/news/anthropic-cyber-mission",
+        "date": "2026-10-08"
       },
       {
-        "headline": "Transformers library can now run llama.cpp GGUF quants",
-        "summary": "Hugging Face Transformers now loads quantized GGUF models and runs them efficiently on local machines, including Apple Silicon.",
-        "source": "Hugging Face",
-        "url": "https://huggingface.co/blog/transformers-llama-cpp-quants",
-        "date": "2026-09-22"
+        "headline": "Anthropic expands Cyber Verification Program to three tiers",
+        "summary": "Vetted security professionals get more advanced cyber capabilities and fewer safety blocks, and Project Glasswing and the program are now merged.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/cyber-verification-program",
+        "date": "2026-10-06"
       },
       {
-        "headline": "UK AISI adopts EvalEval format to share benchmark results",
-        "summary": "The UK AI Security Institute will publish evaluation results in a shared standard format to make benchmarks easier to reproduce.",
-        "source": "Hugging Face",
-        "url": "https://huggingface.co/blog/evaleval-aisi",
-        "date": "2026-09-22"
+        "headline": "Anthropic starts Claude Frontier Academy to train engineers",
+        "summary": "The $100 million program aims to train 10,000 engineers to deploy Claude in enterprises by the end of 2027, with first cohorts from several large firms.",
+        "source": "Anthropic",
+        "url": "https://www.anthropic.com/news/claude-frontier-academy",
+        "date": "2026-10-02"
       }
     ],
     "campus": []
